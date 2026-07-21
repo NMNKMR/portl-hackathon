@@ -1,40 +1,52 @@
 {
   "expo": {
-    "name": "portl-hackathon",
+    "name": "Portl",
     "slug": "portl-hackathon",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "portlhackathon",
+    "icon": "./assets/icons/portl-logo.png",
+    "scheme": "portl",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0F766E",
+        "foregroundImage": "./assets/icons/portl-logo.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/icons/portl-logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#0F766E",
+          "image": "./assets/icons/portl-logo.png",
+          "imageWidth": 160
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Portl to access your photos for visitor and profile images.",
+          "cameraPermission": "Allow Portl to use the camera for visitor photos."
+        }
+      ],
+      "@react-native-vector-icons/ionicons",
+      "@react-native-vector-icons/material-icons",
+      "@react-native-vector-icons/material-design-icons",
+      "@react-native-vector-icons/feather"
     ],
     "experiments": {
       "typedRoutes": true,

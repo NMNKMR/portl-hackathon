@@ -1,18 +1,12 @@
-import { Redirect, type Href } from 'expo-router';
+import { Redirect, Stack, useSegments, type Href } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColors } from '@/lib/theme-colors';
 
-/**
- * Entry router:
- * - loading → spinner
- * - no session → login
- * - session, no phone → complete-phone
- * - session + phone → app hub
- */
-export default function Index() {
+export default function AuthLayout() {
   const { session, profile, isLoading } = useAuth();
+  const segments = useSegments();
   const colors = useThemeColors();
 
   if (isLoading) {
@@ -23,14 +17,16 @@ export default function Index() {
     );
   }
 
-  if (!session) {
-    return <Redirect href="/(auth)/login" />;
+  const phone = profile?.phone ?? session?.user.phone ?? null;
+  const onCompletePhone = (segments as string[]).includes('complete-phone');
+
+  if (session && phone) {
+    return <Redirect href={'/(app)' as Href} />;
   }
 
-  const phone = profile?.phone ?? session.user.phone ?? null;
-  if (!phone) {
+  if (session && !phone && !onCompletePhone) {
     return <Redirect href="/(auth)/complete-phone" />;
   }
 
-  return <Redirect href={'/(app)' as Href} />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
