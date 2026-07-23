@@ -1,16 +1,146 @@
-import { View } from 'react-native';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useMemo } from 'react';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
+import {
+  RoleDashboardShell,
+  type DashboardQuickAction,
+  type DashboardSummaryCard,
+} from '@/components/role-dashboard-shell';
+import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { useAuth } from '@/hooks/use-auth';
+import { useMyMemberships } from '@/hooks/use-society';
+import { useThemeColors } from '@/lib/theme-colors';
+
+function registerVisitorAlert() {
+  Alert.alert(
+    'Coming next',
+    'Visitor registration is the next Tier 1 slice for guards.',
+  );
+}
 
 export default function GuardHomeScreen() {
+  const router = useRouter();
+  const colors = useThemeColors();
+  const { profile } = useAuth();
+  const params = useLocalSearchParams<{ societyId?: string }>();
+
+  const memberships = useMyMemberships();
+  const membership = useMemo(() => {
+    if (params.societyId) {
+      return (memberships.data ?? []).find(
+        (m) =>
+          m.society_id === params.societyId &&
+          m.role === 'guard' &&
+          m.status === 'approved',
+      );
+    }
+    return (memberships.data ?? []).find(
+      (m) => m.role === 'guard' && m.status === 'approved',
+    );
+  }, [params.societyId, memberships.data]);
+
+  const societyName = membership?.societies?.name ?? 'Your society';
+
+  const quickActions: DashboardQuickAction[] = [
+    {
+      id: 'register',
+      label: 'Register visitor',
+      icon: 'people',
+      onPress: registerVisitorAlert,
+    },
+    {
+      id: 'log',
+      label: 'Visitor log',
+      icon: 'grid',
+      disabled: true,
+    },
+    {
+      id: 'notices',
+      label: 'Notices',
+      icon: 'megaphone',
+      disabled: true,
+    },
+    {
+      id: 'staff',
+      label: 'Staff passes',
+      icon: 'qr',
+      disabled: true,
+    },
+    {
+      id: 'amenities',
+      label: 'Amenities',
+      icon: 'calendar',
+      disabled: true,
+    },
+  ];
+
+  const summaryCards: DashboardSummaryCard[] = [
+    {
+      id: 'visitors',
+      label: 'Visitors today',
+      value: '0',
+      icon: 'people',
+    },
+    {
+      id: 'inside',
+      label: 'Currently inside',
+      value: '0',
+      icon: 'time',
+    },
+    {
+      id: 'pending',
+      label: 'Awaiting approval',
+      value: '0',
+      icon: 'megaphone',
+    },
+    {
+      id: 'exits',
+      label: 'Exits logged',
+      value: '0',
+      icon: 'cash',
+    },
+  ];
+
+  if (memberships.isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!membership) {
+    return (
+      <View className="flex-1 bg-background px-6 justify-center">
+        <Text variant="title" className="text-role-guard">
+          Guard
+        </Text>
+        <Text variant="body" tone="muted" className="mt-2">
+          No approved guard membership yet.
+        </Text>
+        <Button
+          className="mt-6"
+          label="Go to hub"
+          fullWidth
+          onPress={() => router.replace('/(app)' as Href)}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-background px-6 justify-center gap-3">
-      <Text variant="title" className="text-role-guard">
-        Guard
-      </Text>
-      <Text variant="body" tone="muted">
-        Empty shell — register visitor and gate log land here.
-      </Text>
-    </View>
+    <RoleDashboardShell
+      role="guard"
+      userName={profile?.full_name}
+      subtitle={societyName}
+      quickActions={quickActions}
+      summaryCards={summaryCards}
+      prominentCta={{
+        label: 'Register visitor',
+        onPress: registerVisitorAlert,
+      }}
+    />
   );
 }

@@ -19,6 +19,9 @@ export function useThemeColors() {
     neutral400,
     google,
     onPrimary,
+    roleAdmin,
+    roleResident,
+    roleGuard,
   ] = useCSSVariable([
     '--color-background',
     '--color-foreground',
@@ -32,6 +35,9 @@ export function useThemeColors() {
     '--color-neutral-400',
     '--color-google',
     '--color-on-primary',
+    '--color-role-admin',
+    '--color-role-resident',
+    '--color-role-guard',
   ]) as Array<string | number | undefined>;
 
   return {
@@ -47,5 +53,8 @@ export function useThemeColors() {
     placeholder: String(neutral400 ?? ''),
     google: String(google ?? ''),
     onPrimary: String(onPrimary ?? ''),
+    roleAdmin: String(roleAdmin ?? ''),
+    roleResident: String(roleResident ?? ''),
+    roleGuard: String(roleGuard ?? ''),
   };
 }

@@ -14,11 +14,13 @@ import { View } from "react-native";
 import { SystemBackgroundSync } from "@/components/system-background-sync";
 import { AppProviders } from "@/providers/app-providers";
 
+import { useThemeColors } from "@/lib/theme-colors";
 import "../../global.css";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export default function RootLayout() {
+  const { background } = useThemeColors();
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -41,7 +43,12 @@ export default function RootLayout() {
       <SystemBackgroundSync />
       <View className="flex-1 bg-background">
         <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: background },
+          }}
+        />
       </View>
     </AppProviders>
   );

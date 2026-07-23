@@ -4,34 +4,39 @@
     "slug": "portl-hackathon",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/portl-logo.png",
+    "icon": "./assets/icons/ios-icon.png",
     "scheme": "portl",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/icons/ios-icon.png",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F766E",
-        "foregroundImage": "./assets/icons/portl-logo.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/icons/android-icon-foreground.png",
+        "monochromeImage": "./assets/icons/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/icons/portl-logo.png"
+      "favicon": "./assets/icons/ios-icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0F766E",
-          "image": "./assets/icons/portl-logo.png",
-          "imageWidth": 160
+          "backgroundColor": "#faf8f5",
+          "image": "./assets/icons/portl-brand.png",
+          "imageWidth": 200,
+          "dark": {
+            "backgroundColor": "#1a1816",
+            "image": "./assets/icons/portl-brand.png"
+          }
         }
       ],
       "expo-secure-store",

@@ -8,9 +8,9 @@ export function SystemBackgroundSync() {
   const { background } = useThemeColors();
 
   useEffect(() => {
-    // if (!background) return;
-    void SystemUI.setBackgroundColorAsync("#1A1816");
-  }, []);
+    if (!background) return;
+    SystemUI.setBackgroundColorAsync(background);
+  }, [background]);
 
   return null;
 }

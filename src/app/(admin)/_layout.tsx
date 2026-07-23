@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
 
 export default function AdminLayout() {
-  return <Stack screenOptions={{ headerShown: true, title: 'Admin' }} />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }

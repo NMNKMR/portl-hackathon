@@ -16,3 +16,19 @@ export function toE164India(local: string): string {
   }
   return `+91${d}`;
 }
+
+/** Display +91 XXXXX XXXXX from Auth/DB values with or without +. */
+export function formatPhoneDisplay(phone: string | null | undefined): string {
+  if (!phone) return 'No phone';
+  const d = digitsOnly(phone);
+  const ten =
+    d.length === 12 && d.startsWith('91')
+      ? d.slice(2)
+      : d.length === 10
+        ? d
+        : d.length > 10
+          ? d.slice(-10)
+          : d;
+  if (ten.length !== 10) return phone;
+  return `+91 ${ten.slice(0, 5)} ${ten.slice(5)}`;
+}
