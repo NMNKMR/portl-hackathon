@@ -13,6 +13,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useThemeColors } from '@/lib/theme-colors';
 
+function comingSoon(label: string) {
+  Alert.alert('Coming next', `${label} will land with the next feature slice.`);
+}
+
 function registerVisitorAlert() {
   Alert.alert(
     'Coming next',
@@ -45,61 +49,40 @@ export default function GuardHomeScreen() {
 
   const quickActions: DashboardQuickAction[] = [
     {
-      id: 'register',
-      label: 'Register visitor',
-      icon: 'people',
-      onPress: registerVisitorAlert,
+      id: 'qr',
+      label: 'Scan QR',
+      icon: 'qr',
+      onPress: () => comingSoon('QR scanner'),
     },
     {
       id: 'log',
       label: 'Visitor log',
-      icon: 'grid',
-      disabled: true,
-    },
-    {
-      id: 'notices',
-      label: 'Notices',
-      icon: 'megaphone',
-      disabled: true,
-    },
-    {
-      id: 'staff',
-      label: 'Staff passes',
-      icon: 'qr',
-      disabled: true,
-    },
-    {
-      id: 'amenities',
-      label: 'Amenities',
-      icon: 'calendar',
-      disabled: true,
+      icon: 'people',
+      onPress: () => comingSoon('Visitor log'),
     },
   ];
 
   const summaryCards: DashboardSummaryCard[] = [
     {
-      id: 'visitors',
-      label: 'Visitors today',
+      id: 'duty',
+      label: 'On duty',
+      value: 'Today',
+      icon: 'shield',
+      onPress: () => comingSoon('Duty details'),
+    },
+    {
+      id: 'visitors-today',
+      label: "Today's entries",
       value: '0',
       icon: 'people',
+      onPress: () => comingSoon('Visitor log'),
     },
     {
       id: 'inside',
       label: 'Currently inside',
       value: '0',
       icon: 'time',
-    },
-    {
-      id: 'pending',
-      label: 'Awaiting approval',
-      value: '0',
-      icon: 'megaphone',
-    },
-    {
-      id: 'exits',
-      label: 'Exits logged',
-      value: '0',
-      icon: 'cash',
+      onPress: () => comingSoon('Visitors inside'),
     },
   ];
 

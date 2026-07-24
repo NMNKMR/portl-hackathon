@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdminScreenHeader } from '@/components/admin/admin-screen-header';
+import { FlatDetailSheet } from '@/components/admin/flat-detail-sheet';
 import { FlatRangePanel } from '@/components/admin/flat-range-panel';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -18,6 +20,7 @@ import {
   useSociety,
   useSocietyFlats,
 } from '@/hooks/use-society';
+import type { Flat } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function DirectFlatsScreen() {
@@ -31,6 +34,7 @@ export default function DirectFlatsScreen() {
   const createRange = useCreateFlatsInRange();
 
   const [error, setError] = useState<string | null>(null);
+  const [selectedFlat, setSelectedFlat] = useState<Flat | null>(null);
 
   const directFlats = useMemo(
     () =>
@@ -122,7 +126,12 @@ export default function DirectFlatsScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View className="mb-2 flex-row items-center rounded-xl border border-border bg-card px-4 py-3">
+            <Pressable
+              onPress={() => setSelectedFlat(item)}
+              className="mb-2 flex-row items-center rounded-xl border border-border bg-card px-4 py-3 active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel={`Flat ${item.flat_number}`}
+            >
               <Text variant="label" className="flex-1">
                 {item.flat_number}
               </Text>
@@ -132,7 +141,7 @@ export default function DirectFlatsScreen() {
                 size={18}
                 color={colors.muted}
               />
-            </View>
+            </Pressable>
           )}
         />
       </View>
@@ -148,6 +157,13 @@ export default function DirectFlatsScreen() {
           </Text>
         ) : null}
       </View>
+
+      <FlatDetailSheet
+        visible={selectedFlat !== null}
+        onClose={() => setSelectedFlat(null)}
+        flat={selectedFlat}
+        societyName={society.data?.name}
+      />
     </View>
   );
 }

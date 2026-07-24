@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, Share, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
 import {
   RoleDashboardShell,
@@ -16,6 +16,10 @@ import {
 } from '@/hooks/use-society';
 import { membershipFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
+
+function comingSoon(label: string) {
+  Alert.alert('Coming next', `${label} will land with the next feature slice.`);
+}
 
 export default function ResidentHomeScreen() {
   const router = useRouter();
@@ -43,107 +47,91 @@ export default function ResidentHomeScreen() {
   const householdPending = usePendingHousehold(
     isPrimary ? flatId : undefined,
   );
-  const pendingCount = householdPending.data?.length ?? 0;
+  const householdPendingCount = householdPending.data?.length ?? 0;
 
   const flatLabel = membership ? membershipFlatLabel(membership) : null;
   const societyName = membership?.societies?.name ?? 'Your society';
-  const societyCode = membership?.societies?.code;
   const subtitle = flatLabel
     ? `${flatLabel} · ${societyName}`
     : societyName;
 
-  const inviteHousehold = () => {
-    if (!societyCode || !flatLabel) return;
-    void Share.share({
-      message: `Join our flat on Portl.\nSociety code: ${societyCode}\nFlat: ${flatLabel}\n\n1) Sign up with your phone\n2) Join with the code\n3) Pick this flat — you'll request as a household member.`,
-    });
+  const openHousehold = () => {
+    if (!membership?.society_id || !flatId) return;
+    router.push({
+      pathname: '/(resident)/household',
+      params: {
+        societyId: membership.society_id,
+        flatId,
+      },
+    } as Href);
   };
 
   const quickActions: DashboardQuickAction[] = [
+    {
+      id: 'approve-visitors',
+      label: 'Approve visitors',
+      icon: 'people',
+      onPress: () => comingSoon('Visitor approvals'),
+    },
+    {
+      id: 'preapprove',
+      label: 'Pre-approve',
+      icon: 'qr',
+      onPress: () => comingSoon('Guest pre-approval'),
+    },
     ...(isPrimary
       ? [
           {
             id: 'household',
-            label: 'Household joins',
+            label: 'Household',
             icon: 'people' as const,
-            onPress: () =>
-              router.push({
-                pathname: '/(resident)/household',
-                params: {
-                  societyId: membership!.society_id,
-                  flatId: flatId!,
-                },
-              } as Href),
-          },
-          {
-            id: 'invite',
-            label: 'Invite household',
-            icon: 'share' as const,
-            onPress: inviteHousehold,
+            onPress: openHousehold,
           },
         ]
       : []),
     {
-      id: 'register',
-      label: 'Register visitor',
-      icon: 'people',
-      disabled: true,
-    },
-    {
-      id: 'preapprove',
-      label: 'Pre-approve guest',
-      icon: 'qr',
-      disabled: true,
-    },
-    {
-      id: 'notices',
-      label: 'Notices',
-      icon: 'megaphone',
-      disabled: true,
-    },
-    {
       id: 'complaint',
       label: 'Raise complaint',
       icon: 'construct',
-      disabled: true,
+      onPress: () => comingSoon('Complaints'),
     },
   ];
 
   const summaryCards: DashboardSummaryCard[] = [
     {
-      id: 'visitors',
-      label: 'Visitors today',
+      id: 'pending-visitors',
+      label: 'Pending visitors',
       value: '0',
-      icon: 'people',
-    },
-    {
-      id: 'pending',
-      label: isPrimary ? 'Household pending' : 'Pending approvals',
-      value: String(isPrimary ? pendingCount : 0),
       icon: 'time',
-      onPress: isPrimary
-        ? () =>
-            router.push({
-              pathname: '/(resident)/household',
-              params: {
-                societyId: membership!.society_id,
-                flatId: flatId!,
-              },
-            } as Href)
-        : undefined,
+      onPress: () => comingSoon('Visitor approvals'),
     },
     {
       id: 'notices',
       label: 'New notices',
       value: '0',
       icon: 'megaphone',
+      onPress: () => comingSoon('Notices'),
     },
     {
       id: 'dues',
-      label: 'Maintenance due',
+      label: 'Dues due',
       value: '₹0',
       icon: 'cash',
+      onPress: () => comingSoon('Maintenance dues'),
     },
+    ...(isPrimary
+      ? [
+          {
+            id: 'household-pending',
+            label: 'Household pending',
+            value: String(householdPendingCount),
+            icon: 'people' as const,
+            linkLabel:
+              householdPendingCount > 0 ? 'Review now >' : undefined,
+            onPress: openHousehold,
+          },
+        ]
+      : []),
   ];
 
   if (memberships.isLoading) {

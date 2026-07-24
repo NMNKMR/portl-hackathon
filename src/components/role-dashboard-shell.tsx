@@ -1,16 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
 import {
   Alert,
   Pressable,
   ScrollView,
-  Share,
   View,
   type ScrollViewProps,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { DashboardBottomNav } from "@/components/dashboard-bottom-nav";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -39,7 +36,7 @@ export type DashboardSummaryCard = {
   id: string;
   label: string;
   value: string;
-  icon: "people" | "time" | "megaphone" | "cash";
+  icon: "people" | "time" | "megaphone" | "cash" | "construct" | "shield";
   linkLabel?: string;
   onPress?: () => void;
 };
@@ -47,8 +44,8 @@ export type DashboardSummaryCard = {
 type RoleDashboardShellProps = {
   role: DashboardRole;
   userName?: string | null;
+  /** Society name (or flat label) — do not append society code here */
   subtitle: string;
-  societyCode?: string | null;
   quickActions: DashboardQuickAction[];
   summaryCards: DashboardSummaryCard[];
   prominentCta?: {
@@ -74,6 +71,8 @@ const SUMMARY_ICONS = {
   time: { family: "ionic" as const, name: "time-outline" as const },
   megaphone: { family: "ionic" as const, name: "megaphone-outline" as const },
   cash: { family: "ionic" as const, name: "cash-outline" as const },
+  construct: { family: "ionic" as const, name: "construct-outline" as const },
+  shield: { family: "ionic" as const, name: "shield-checkmark-outline" as const },
 };
 
 function roleAccentColor(
@@ -109,30 +108,17 @@ export function RoleDashboardShell({
   role,
   userName,
   subtitle,
-  societyCode,
   quickActions,
   summaryCards,
   prominentCta,
   children,
   scrollProps,
 }: RoleDashboardShellProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const accent = roleAccentColor(role, colors);
   const gradient = roleGradientColors(role, colors);
   const accentClass = roleAccentClass(role);
-
-  const handleShareCode = async () => {
-    if (!societyCode) return;
-    try {
-      await Share.share({
-        message: `Join our society on Portl with code: ${societyCode}`,
-      });
-    } catch {
-      Alert.alert("Could not share", societyCode);
-    }
-  };
 
   return (
     <View className="flex-1 bg-background">
@@ -142,19 +128,31 @@ export function RoleDashboardShell({
         end={{ x: 1, y: 1 }}
         style={{ paddingTop: insets.top + 8 }}
       >
-        <View className="flex-row items-center justify-between px-5 pb-4">
-          <Pressable
-            onPress={() => router.push("/(app)" as Href)}
-            hitSlop={8}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/15"
-          >
+        <View className="flex-row items-center gap-3 px-5 pb-14">
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-white/20">
             <Icon
               family="ionic"
-              name="menu-outline"
-              size={22}
+              name="person"
+              size={24}
               color={colors.onPrimary}
             />
-          </Pressable>
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text variant="caption" tone="inverse">
+              {getGreeting()}, 👋
+            </Text>
+            <Text variant="subtitle" tone="inverse" className="mt-0.5">
+              {displayPersonName(userName, "Member")}
+            </Text>
+            <Text
+              variant="caption"
+              tone="inverse"
+              className="mt-0.5 opacity-90"
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          </View>
           <Pressable
             onPress={comingSoonAlert}
             hitSlop={8}
@@ -167,34 +165,6 @@ export function RoleDashboardShell({
               color={colors.onPrimary}
             />
           </Pressable>
-        </View>
-
-        <View className="px-5 pb-16">
-          <View className="flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-white/20">
-              <Icon
-                family="ionic"
-                name="person"
-                size={24}
-                color={colors.onPrimary}
-              />
-            </View>
-            <View className="flex-1">
-              <Text variant="caption" tone="inverse">
-                {getGreeting()}, 👋
-              </Text>
-              <Text variant="subtitle" tone="inverse" className="mt-0.5">
-                {displayPersonName(userName, "Member")}
-              </Text>
-              <Text
-                variant="caption"
-                tone="inverse"
-                className="mt-0.5 opacity-90"
-              >
-                {subtitle}
-              </Text>
-            </View>
-          </View>
         </View>
       </LinearGradient>
 
@@ -258,31 +228,6 @@ export function RoleDashboardShell({
           />
         ) : null}
 
-        {role === "admin" && societyCode ? (
-          <Pressable
-            onPress={() => void handleShareCode()}
-            className="mt-4 rounded-xl border border-border bg-card px-4 py-3"
-          >
-            <Text variant="caption" tone="muted">
-              Society code
-            </Text>
-            <View className="mt-1 flex-row items-center justify-between">
-              <Text variant="subtitle" className="tracking-widest">
-                {societyCode}
-              </Text>
-              <Icon
-                family="ionic"
-                name="share-outline"
-                size={20}
-                color={colors.primary}
-              />
-            </View>
-            <Text variant="caption" tone="primary" className="mt-1">
-              Tap to share
-            </Text>
-          </Pressable>
-        ) : null}
-
         <View className="mt-5 flex-row flex-wrap gap-3">
           {summaryCards.map((card) => {
             const iconDef = SUMMARY_ICONS[card.icon];
@@ -323,11 +268,9 @@ export function RoleDashboardShell({
         </View>
 
         {children}
-
-        <SignOutButton className="mt-8" />
       </ScrollView>
 
-      <DashboardBottomNav roleAccent={accent} />
+      <DashboardBottomNav role={role} roleAccent={accent} activeTab="home" />
     </View>
   );
 }

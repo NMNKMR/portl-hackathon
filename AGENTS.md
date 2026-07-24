@@ -101,6 +101,7 @@ Note: this repo uses the Expo `src/` layout (`@/*` → `./src/*`). Do not create
 - Icons via scoped **`@react-native-vector-icons/*`** packages (Expo recommends `@react-native-vector-icons/*` over deprecated `@expo/vector-icons`). Wrapper: **`src/components/ui/icon.tsx`**. Installed families: ionicons, material-icons, material-design-icons (MaterialCommunity), feather. Do not use lucide-react-native or the old umbrella `react-native-vector-icons` package; do not add FlashList unless revisited.
 - **Never hardcode hex/rgb color literals in components.** Prefer Uniwind `className` tokens. When a JS color string is required (Icon `color`, `placeholderTextColor`, SystemUI, charts), use `useThemeColors()` / `useCSSVariable('--color-…')` from Uniwind, or a single shared constants module that only re-exports theme tokens — never scatter raw `#…` in screens.
 - Empty / loading / error states required on list/detail flows.
+- **Keyboard:** Always use `KeyboardAvoidingView` with `behavior="padding"` on both iOS and Android. Never use `height`, `null`, or iOS-only padding (`Platform.OS === 'ios' ? 'padding' : undefined`). Android needs padding too; height/null do not work reliably in this project.
 
 ### Data & sync
 
@@ -163,6 +164,7 @@ Then stop and notify. After they confirm, commit if they ask.
 - Expanding Tier 2 while Tier 1 push/approval loop is unproven
 - Silent doc drift (code changes without progress-tracker / design-tokens updates)
 - Using non-Cursor Claude API models for project subagents
+- `KeyboardAvoidingView` with `behavior="height"` / `null` / iOS-only padding (always use `"padding"` on both platforms)
 
 ---
 

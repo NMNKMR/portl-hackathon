@@ -100,7 +100,7 @@ export default function SignUpScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={"padding"}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,

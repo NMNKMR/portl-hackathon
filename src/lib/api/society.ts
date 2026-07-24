@@ -68,6 +68,19 @@ export type PendingMembership = {
   block_name: string | null;
 };
 
+export type FlatMember = {
+  id: string;
+  user_id: string;
+  flat_id: string | null;
+  role: MembershipRole;
+  resident_type: ResidentType | null;
+  member_type: ResidentMemberType | null;
+  status: MembershipStatus;
+  created_at: string;
+  full_name: string | null;
+  phone: string | null;
+};
+
 export async function createSociety(name: string, plan: SocietyPlan = 'free') {
   const { data, error } = await supabase.rpc('create_society', {
     p_name: name.trim(),
@@ -272,6 +285,39 @@ export async function createFlatsInRange(
 
   if (error) throw error;
   return (data ?? []) as Flat[];
+}
+
+export async function listFlatMembers(flatId: string) {
+  const { data, error } = await supabase
+    .from('memberships')
+    .select(
+      'id, user_id, flat_id, role, resident_type, member_type, status, created_at, users(full_name, phone)',
+    )
+    .eq('flat_id', flatId)
+    .in('status', ['approved', 'pending'])
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const users = row.users as {
+      full_name: string | null;
+      phone: string | null;
+    } | null;
+
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      flat_id: row.flat_id,
+      role: row.role,
+      resident_type: row.resident_type,
+      member_type: row.member_type,
+      status: row.status,
+      created_at: row.created_at,
+      full_name: users?.full_name ?? null,
+      phone: users?.phone ?? null,
+    } satisfies FlatMember;
+  });
 }
 
 export async function fetchPendingMemberships(societyId: string) {

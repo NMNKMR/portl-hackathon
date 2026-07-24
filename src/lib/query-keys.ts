@@ -3,6 +3,8 @@ export const queryKeys = {
   memberships: {
     all: ['memberships'] as const,
     mine: () => [...queryKeys.memberships.all, 'mine'] as const,
+    byFlat: (flatId: string) =>
+      [...queryKeys.memberships.all, 'flat', flatId] as const,
     pendingHousehold: (flatId: string) =>
       [...queryKeys.memberships.all, 'pending-household', flatId] as const,
   },

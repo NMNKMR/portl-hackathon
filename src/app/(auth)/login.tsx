@@ -73,7 +73,7 @@ export default function LoginScreen() {
     <View className="flex-1 bg-background">
       <AuthHeader />
 
-      <KeyboardAvoidingView className="flex-1" behavior={"padding"}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,

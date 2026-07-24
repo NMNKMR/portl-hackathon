@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "899883492338",
+    "project_id": "portl-f4e75",
+    "storage_bucket": "portl-f4e75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899883492338:android:92091c71dca6a58e2cc16b",
+        "android_client_info": {
+          "package_name": "com.portl.app.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASp2xftJCyL6fS88oL40JjKpUtE7TrrSQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899883492338:android:ab1e93975319b2b62cc16b",
+        "android_client_info": {
+          "package_name": "com.portl.app.preview"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASp2xftJCyL6fS88oL40JjKpUtE7TrrSQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

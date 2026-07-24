@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdminScreenHeader } from '@/components/admin/admin-screen-header';
+import { FlatDetailSheet } from '@/components/admin/flat-detail-sheet';
 import { FlatRangePanel } from '@/components/admin/flat-range-panel';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -19,6 +21,7 @@ import {
   useSocietyBlocks,
   useSocietyFlats,
 } from '@/hooks/use-society';
+import type { Flat } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function BlockFlatsScreen() {
@@ -34,6 +37,7 @@ export default function BlockFlatsScreen() {
   const createRange = useCreateFlatsInRange();
 
   const [error, setError] = useState<string | null>(null);
+  const [selectedFlat, setSelectedFlat] = useState<Flat | null>(null);
 
   const blockId = params.blockId;
   const block = useMemo(
@@ -126,7 +130,17 @@ export default function BlockFlatsScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View className="mb-2 flex-row items-center rounded-xl border border-border bg-card px-4 py-3">
+            <Pressable
+              onPress={() =>
+                setSelectedFlat({
+                  ...item,
+                  block_name: item.block_name ?? block.name,
+                })
+              }
+              className="mb-2 flex-row items-center rounded-xl border border-border bg-card px-4 py-3 active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel={`Flat ${item.flat_number}`}
+            >
               <Text variant="label" className="flex-1">
                 {item.flat_number}
               </Text>
@@ -136,7 +150,7 @@ export default function BlockFlatsScreen() {
                 size={18}
                 color={colors.muted}
               />
-            </View>
+            </Pressable>
           )}
         />
       </View>
@@ -152,6 +166,13 @@ export default function BlockFlatsScreen() {
           </Text>
         ) : null}
       </View>
+
+      <FlatDetailSheet
+        visible={selectedFlat !== null}
+        onClose={() => setSelectedFlat(null)}
+        flat={selectedFlat}
+        societyName={society.data?.name}
+      />
     </View>
   );
 }

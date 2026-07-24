@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   View,
@@ -196,10 +195,7 @@ export default function JoinSocietyScreen() {
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           className="flex-1 px-6"
           keyboardShouldPersistTaps="handled"

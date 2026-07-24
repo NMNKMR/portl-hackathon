@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, Share, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Share, View } from 'react-native';
 
 import { PendingJoinCard } from '@/components/admin/pending-join-card';
 import {
@@ -18,6 +18,10 @@ import {
   useUpdateMembershipStatus,
 } from '@/hooks/use-society';
 import { useThemeColors } from '@/lib/theme-colors';
+
+function comingSoon(label: string) {
+  Alert.alert('Coming next', `${label} will land with the next feature slice.`);
+}
 
 export default function AdminHomeScreen() {
   const router = useRouter();
@@ -78,15 +82,9 @@ export default function AdminHomeScreen() {
     },
     {
       id: 'notices',
-      label: 'Notices',
+      label: 'Compose notice',
       icon: 'megaphone',
-      disabled: true,
-    },
-    {
-      id: 'amenities',
-      label: 'Amenities',
-      icon: 'calendar',
-      disabled: true,
+      onPress: () => comingSoon('Notice composer'),
     },
   ];
 
@@ -97,32 +95,32 @@ export default function AdminHomeScreen() {
       value: String(pendingRows.length),
       icon: 'time',
       linkLabel: pendingRows.length > 0 ? 'Review now >' : undefined,
-      onPress:
-        pendingRows.length > 0
-          ? () =>
-              router.push({
-                pathname: '/(admin)/pending',
-                params: { societyId: societyId! },
-              })
-          : undefined,
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/pending',
+          params: { societyId: societyId! },
+        }),
     },
     {
       id: 'residents',
       label: 'Residents',
       value: '—',
       icon: 'people',
+      onPress: () => comingSoon('Residents directory'),
+    },
+    {
+      id: 'complaints',
+      label: 'Open complaints',
+      value: '0',
+      icon: 'construct',
+      onPress: () => comingSoon('Complaints triage'),
     },
     {
       id: 'notices',
       label: 'Active notices',
       value: '0',
       icon: 'megaphone',
-    },
-    {
-      id: 'dues',
-      label: 'Dues collected',
-      value: '₹0',
-      icon: 'cash',
+      onPress: () => comingSoon('Notices'),
     },
   ];
 
@@ -157,8 +155,7 @@ export default function AdminHomeScreen() {
     <RoleDashboardShell
       role="admin"
       userName={profile?.full_name}
-      subtitle={`${societyName}${code ? ` · ${code}` : ''}`}
-      societyCode={code}
+      subtitle={societyName}
       quickActions={quickActions}
       summaryCards={summaryCards}
     >

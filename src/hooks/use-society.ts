@@ -13,6 +13,7 @@ import {
   fetchSociety,
   fetchSocietyBlocks,
   fetchSocietyFlats,
+  listFlatMembers,
   lookupSocietyByCode,
   requestMembership,
   updateBlock,
@@ -64,6 +65,14 @@ export function usePendingHousehold(flatId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.memberships.pendingHousehold(flatId ?? ''),
     queryFn: () => fetchPendingHousehold(flatId!),
+    enabled: Boolean(flatId),
+  });
+}
+
+export function useFlatMembers(flatId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.memberships.byFlat(flatId ?? ''),
+    queryFn: () => listFlatMembers(flatId!),
     enabled: Boolean(flatId),
   });
 }
@@ -183,7 +192,7 @@ export function useUpdateMembershipStatus() {
       status: 'approved' | 'rejected';
       societyId: string;
     }) => updateMembershipStatus(input.membershipId, input.status),
-    onSuccess: async (_data, vars) => {
+    onSuccess: async (data, vars) => {
       await qc.invalidateQueries({
         queryKey: [...queryKeys.memberships.all, 'pending', vars.societyId],
       });
@@ -191,6 +200,11 @@ export function useUpdateMembershipStatus() {
         queryKey: queryKeys.memberships.all,
       });
       await qc.invalidateQueries({ queryKey: queryKeys.memberships.mine() });
+      if (data.flat_id) {
+        await qc.invalidateQueries({
+          queryKey: queryKeys.memberships.byFlat(data.flat_id),
+        });
+      }
     },
   });
 }

@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Pressable, View } from 'react-native';
 
+import { AppBottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
@@ -33,7 +27,6 @@ export function CreateBlockSheet({
   onClose,
   onSubmit,
 }: CreateBlockSheetProps) {
-  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [type, setType] = useState<BlockType>('tower');
   const [error, setError] = useState<string | null>(null);
@@ -60,66 +53,14 @@ export function CreateBlockSheet({
   };
 
   return (
-    <Modal
+    <AppBottomSheet
       visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-    >
-      <Pressable className="flex-1 bg-black/40" onPress={handleClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="absolute bottom-0 left-0 right-0"
-      >
-        <View
-          className="rounded-t-2xl border-t border-border bg-card px-6 pt-5"
-          style={{ paddingBottom: insets.bottom + 16 }}
-        >
-          <Text variant="subtitle">Create block</Text>
-          <Text variant="caption" tone="muted" className="mt-1">
-            Name your tower, wing, or block to organize flats.
-          </Text>
-
-          <View className="mt-5">
-            <TextInput
-              label="Block name"
-              placeholder="e.g. Tower A"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-          </View>
-
-          <Text variant="label" className="mt-4 mb-2">
-            Type
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {BLOCK_TYPES.map((item) => {
-              const selected = type === item.value;
-              return (
-                <Pressable
-                  key={item.value}
-                  onPress={() => setType(item.value)}
-                  className={`rounded-xl border px-3 py-2 ${
-                    selected
-                      ? 'border-role-admin bg-role-admin/10'
-                      : 'border-border bg-background'
-                  }`}
-                >
-                  <Text variant="caption">{item.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {error ? (
-            <Text variant="caption" tone="danger" className="mt-3">
-              {error}
-            </Text>
-          ) : null}
-
+      onClose={handleClose}
+      title="Create block"
+      snapPoints={['55%', '75%']}
+      footer={
+        <View>
           <Button
-            className="mt-6"
             label="Create block"
             fullWidth
             loading={loading}
@@ -133,7 +74,51 @@ export function CreateBlockSheet({
             onPress={handleClose}
           />
         </View>
+      }
+    >
+      <KeyboardAvoidingView behavior="padding">
+        <Text variant="caption" tone="muted">
+          Name your tower, wing, or block to organize flats.
+        </Text>
+
+        <View className="mt-5">
+          <TextInput
+            label="Block name"
+            placeholder="e.g. Tower A"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+        </View>
+
+        <Text variant="label" className="mt-4 mb-2">
+          Type
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          {BLOCK_TYPES.map((item) => {
+            const selected = type === item.value;
+            return (
+              <Pressable
+                key={item.value}
+                onPress={() => setType(item.value)}
+                className={`rounded-xl border px-3 py-2 ${
+                  selected
+                    ? 'border-role-admin bg-role-admin/10'
+                    : 'border-border bg-background'
+                }`}
+              >
+                <Text variant="caption">{item.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {error ? (
+          <Text variant="caption" tone="danger" className="mt-3">
+            {error}
+          </Text>
+        ) : null}
       </KeyboardAvoidingView>
-    </Modal>
+    </AppBottomSheet>
   );
 }

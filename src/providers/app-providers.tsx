@@ -1,5 +1,7 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import {
   queryClient,
@@ -22,8 +24,12 @@ export function AppProviders({ children }: AppProvidersProps) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <BottomSheetModalProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </BottomSheetModalProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

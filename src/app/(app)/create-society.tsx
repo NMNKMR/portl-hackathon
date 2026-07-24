@@ -71,7 +71,7 @@ export default function CreateSocietyScreen() {
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }}
     >
-      <KeyboardAvoidingView className="flex-1" behavior={"padding"}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           className="flex-1 px-6"
           keyboardShouldPersistTaps="handled"

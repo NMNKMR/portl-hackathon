@@ -1,16 +1,12 @@
+import * as Clipboard from 'expo-clipboard';
 import { Alert } from 'react-native';
 
-/** Copy text when expo-clipboard is installed; otherwise surface the value. */
+/** Copy text to the system clipboard; on failure surface the value in an Alert. */
 export async function copyTextWithFallback(
   text: string,
   successMessage = 'Copied to clipboard',
 ): Promise<void> {
   try {
-    // Optional dependency — not bundled unless `npx expo install expo-clipboard`.
-    const moduleName = 'expo-clipboard';
-    const Clipboard = (await import(moduleName)) as {
-      setStringAsync: (value: string) => Promise<void>;
-    };
     await Clipboard.setStringAsync(text);
     Alert.alert('Copied', successMessage);
   } catch {
