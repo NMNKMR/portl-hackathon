@@ -1,8 +1,9 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-import { PORTL_NOTIFICATION_CHANNEL_ID } from "./src/constants/notifications";
-
 type AppVariant = "development" | "preview" | "production";
+
+/** Keep in sync with `PORTL_NOTIFICATION_CHANNEL_ID` in src/constants/notifications.ts */
+const PORTL_NOTIFICATION_CHANNEL_ID = "portl";
 const APP_VARIANT = (process.env.APP_VARIANT ?? "development") as AppVariant;
 
 const VARIANT_CONFIG: Record<
