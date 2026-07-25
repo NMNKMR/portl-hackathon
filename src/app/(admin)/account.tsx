@@ -3,13 +3,11 @@ import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AccountScreen } from '@/components/account-screen';
-import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships, useSociety } from '@/hooks/use-society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function AdminAccountRoute() {
   const colors = useThemeColors();
-  const { profile } = useAuth();
   const params = useLocalSearchParams<{ societyId?: string; code?: string }>();
 
   const memberships = useMyMemberships();
@@ -35,8 +33,7 @@ export default function AdminAccountRoute() {
   return (
     <AccountScreen
       role="admin"
-      userName={profile?.full_name}
-      phone={profile?.phone}
+      societyId={societyId}
       societyName={society.data?.name}
       societyCode={code}
     />

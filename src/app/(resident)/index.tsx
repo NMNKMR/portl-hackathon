@@ -14,6 +14,7 @@ import {
   useMyMemberships,
   usePendingHousehold,
 } from '@/hooks/use-society';
+import { useFlatVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
 import { membershipFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
@@ -49,11 +50,26 @@ export default function ResidentHomeScreen() {
   );
   const householdPendingCount = householdPending.data?.length ?? 0;
 
+  const flatVisitors = useFlatVisitors(flatId);
+  useVisitorRealtime({ flatId, enabled: Boolean(flatId) });
+  const pendingVisitorCount = useMemo(
+    () =>
+      (flatVisitors.data ?? []).filter((v) => v.status === 'pending').length,
+    [flatVisitors.data],
+  );
+
   const flatLabel = membership ? membershipFlatLabel(membership) : null;
   const societyName = membership?.societies?.name ?? 'Your society';
   const subtitle = flatLabel
     ? `${flatLabel} · ${societyName}`
     : societyName;
+
+  const openVisitors = (pendingOnly = false) => {
+    if (!membership?.society_id) return;
+    const qs = new URLSearchParams({ societyId: membership.society_id });
+    if (pendingOnly) qs.set('filter', 'pending');
+    router.push(`/(resident)/visitors?${qs.toString()}` as Href);
+  };
 
   const openHousehold = () => {
     if (!membership?.society_id || !flatId) return;
@@ -71,7 +87,7 @@ export default function ResidentHomeScreen() {
       id: 'approve-visitors',
       label: 'Approve visitors',
       icon: 'people',
-      onPress: () => comingSoon('Visitor approvals'),
+      onPress: () => openVisitors(false),
     },
     {
       id: 'preapprove',
@@ -101,9 +117,10 @@ export default function ResidentHomeScreen() {
     {
       id: 'pending-visitors',
       label: 'Pending visitors',
-      value: '0',
+      value: String(pendingVisitorCount),
       icon: 'time',
-      onPress: () => comingSoon('Visitor approvals'),
+      linkLabel: pendingVisitorCount > 0 ? 'Review now >' : undefined,
+      onPress: () => openVisitors(true),
     },
     {
       id: 'notices',

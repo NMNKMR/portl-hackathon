@@ -1,6 +1,7 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 
+import { imageExtFromUri, uploadLocalImage } from "@/lib/api/upload-local-image";
 import { toE164India } from "@/lib/phone";
 import { supabase } from "@/lib/supabase";
 
@@ -141,6 +142,62 @@ export async function updateUserPhone(phoneLocal: string) {
     .eq("id", user.id);
 
   if (profileError) throw profileError;
+}
+
+export async function updateProfile(input: {
+  fullName?: string;
+  avatarUrl?: string | null;
+}): Promise<UserProfile> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("Not signed in");
+
+  const patch: { full_name?: string; avatar_url?: string | null } = {};
+  if (input.fullName !== undefined) {
+    const trimmed = input.fullName.trim();
+    if (trimmed.length < 1) throw new Error("Name is required");
+    patch.full_name = trimmed;
+  }
+  if (input.avatarUrl !== undefined) {
+    patch.avatar_url = input.avatarUrl;
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .update(patch)
+    .eq("id", user.id)
+    .select("id, full_name, phone, avatar_url")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Upload avatar to public `avatars` bucket; path `{userId}/{timestamp}.ext`. */
+export async function uploadAvatar(input: {
+  localUri: string;
+  base64?: string | null;
+}): Promise<string> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("Not signed in");
+
+  const ext = imageExtFromUri(input.localUri);
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  return uploadLocalImage({
+    bucket: "avatars",
+    path,
+    localUri: input.localUri,
+    base64: input.base64,
+    upsert: true,
+  });
 }
 
 export async function signOut() {

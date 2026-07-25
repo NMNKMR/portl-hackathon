@@ -3,13 +3,12 @@ import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AccountScreen } from '@/components/account-screen';
-import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships } from '@/hooks/use-society';
+import { membershipFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function ResidentAccountRoute() {
   const colors = useThemeColors();
-  const { profile } = useAuth();
   const params = useLocalSearchParams<{ societyId?: string }>();
   const memberships = useMyMemberships();
 
@@ -37,9 +36,12 @@ export default function ResidentAccountRoute() {
   return (
     <AccountScreen
       role="resident"
-      userName={profile?.full_name}
-      phone={profile?.phone}
+      societyId={membership?.society_id}
       societyName={membership?.societies?.name}
+      societyCode={membership?.societies?.code}
+      flatId={membership?.flat_id}
+      flatLabel={membership ? membershipFlatLabel(membership) : null}
+      showHousehold={membership?.member_type === 'primary'}
     />
   );
 }

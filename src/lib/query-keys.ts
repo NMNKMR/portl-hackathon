@@ -32,4 +32,8 @@ export const queryKeys = {
       [...queryKeys.visitorRequests.all, 'society', societyId] as const,
     detail: (id: string) => [...queryKeys.visitorRequests.all, id] as const,
   },
+  pushTokens: {
+    all: ['push-tokens'] as const,
+    mine: () => [...queryKeys.pushTokens.all, 'mine'] as const,
+  },
 } as const;

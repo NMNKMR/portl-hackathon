@@ -3,13 +3,11 @@ import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AccountScreen } from '@/components/account-screen';
-import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function GuardAccountRoute() {
   const colors = useThemeColors();
-  const { profile } = useAuth();
   const params = useLocalSearchParams<{ societyId?: string }>();
   const memberships = useMyMemberships();
 
@@ -37,9 +35,9 @@ export default function GuardAccountRoute() {
   return (
     <AccountScreen
       role="guard"
-      userName={profile?.full_name}
-      phone={profile?.phone}
+      societyId={membership?.society_id}
       societyName={membership?.societies?.name}
+      societyCode={membership?.societies?.code}
     />
   );
 }

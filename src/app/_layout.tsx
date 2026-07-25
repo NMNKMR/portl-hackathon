@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { View } from "react-native";
 
 import { SystemBackgroundSync } from "@/components/system-background-sync";
+import { PushTokenRegistrar } from "@/components/push-token-registrar";
 import { AppProviders } from "@/providers/app-providers";
 
 import { useThemeColors } from "@/lib/theme-colors";
@@ -41,6 +42,7 @@ export default function RootLayout() {
   return (
     <AppProviders>
       <SystemBackgroundSync />
+      <PushTokenRegistrar />
       <View className="flex-1 bg-background">
         <StatusBar style="auto" />
         <Stack

@@ -45,6 +45,12 @@ function accountHref(role: DashboardRole): Href {
   return "/(resident)/account" as Href;
 }
 
+function visitorsHref(role: DashboardRole): Href {
+  if (role === "admin") return "/(admin)/visitors" as Href;
+  if (role === "guard") return "/(guard)/visitors" as Href;
+  return "/(resident)/visitors" as Href;
+}
+
 type DashboardBottomNavProps = {
   role: DashboardRole;
   roleAccent: string;
@@ -71,7 +77,7 @@ export function DashboardBottomNav({
       id: "visitors",
       label: "Visitors",
       icon: "people",
-      onPress: comingSoonAlert,
+      onPress: () => router.replace(visitorsHref(role)),
     },
     {
       id: "notices",

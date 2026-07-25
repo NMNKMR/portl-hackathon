@@ -11,17 +11,17 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships } from '@/hooks/use-society';
+import { useSocietyVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
 import { useThemeColors } from '@/lib/theme-colors';
 
 function comingSoon(label: string) {
   Alert.alert('Coming next', `${label} will land with the next feature slice.`);
 }
 
-function registerVisitorAlert() {
-  Alert.alert(
-    'Coming next',
-    'Visitor registration is the next Tier 1 slice for guards.',
-  );
+function startOfTodayIso(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
 }
 
 export default function GuardHomeScreen() {
@@ -45,7 +45,48 @@ export default function GuardHomeScreen() {
     );
   }, [params.societyId, memberships.data]);
 
+  const societyId = membership?.society_id;
   const societyName = membership?.societies?.name ?? 'Your society';
+
+  const visitorsQuery = useSocietyVisitors(societyId);
+  useVisitorRealtime({ societyId, enabled: Boolean(societyId) });
+
+  const todayStart = useMemo(() => startOfTodayIso(), []);
+
+  const todaysEntries = useMemo(() => {
+    const rows = visitorsQuery.data ?? [];
+    return rows.filter(
+      (v) =>
+        (v.checked_in_at && v.checked_in_at >= todayStart) ||
+        (!v.checked_in_at && v.requested_at >= todayStart),
+    ).length;
+  }, [visitorsQuery.data, todayStart]);
+
+  const currentlyInside = useMemo(() => {
+    return (visitorsQuery.data ?? []).filter((v) => v.status === 'checked_in')
+      .length;
+  }, [visitorsQuery.data]);
+
+  const visitorsHref = useMemo(() => {
+    if (societyId) {
+      return `/(guard)/visitors?societyId=${encodeURIComponent(societyId)}` as Href;
+    }
+    return '/(guard)/visitors' as Href;
+  }, [societyId]);
+
+  const registerHref = useMemo(() => {
+    if (societyId) {
+      return `/(guard)/visitors/register?societyId=${encodeURIComponent(societyId)}` as Href;
+    }
+    return '/(guard)/visitors/register' as Href;
+  }, [societyId]);
+
+  const insideHref = useMemo(() => {
+    if (societyId) {
+      return `/(guard)/visitors?societyId=${encodeURIComponent(societyId)}&filter=inside` as Href;
+    }
+    return '/(guard)/visitors?filter=inside' as Href;
+  }, [societyId]);
 
   const quickActions: DashboardQuickAction[] = [
     {
@@ -58,7 +99,7 @@ export default function GuardHomeScreen() {
       id: 'log',
       label: 'Visitor log',
       icon: 'people',
-      onPress: () => comingSoon('Visitor log'),
+      onPress: () => router.push(visitorsHref),
     },
   ];
 
@@ -73,16 +114,16 @@ export default function GuardHomeScreen() {
     {
       id: 'visitors-today',
       label: "Today's entries",
-      value: '0',
+      value: String(todaysEntries),
       icon: 'people',
-      onPress: () => comingSoon('Visitor log'),
+      onPress: () => router.push(visitorsHref),
     },
     {
       id: 'inside',
       label: 'Currently inside',
-      value: '0',
+      value: String(currentlyInside),
       icon: 'time',
-      onPress: () => comingSoon('Visitors inside'),
+      onPress: () => router.push(insideHref),
     },
   ];
 
@@ -122,7 +163,7 @@ export default function GuardHomeScreen() {
       summaryCards={summaryCards}
       prominentCta={{
         label: 'Register visitor',
-        onPress: registerVisitorAlert,
+        onPress: () => router.push(registerHref),
       }}
     />
   );
