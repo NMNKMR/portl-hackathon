@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -12,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useAdmitVisitorEntry } from '@/hooks/use-visitors';
 import { fetchStaffByPassToken, staffFlatLabel } from '@/lib/api/staff';
@@ -149,59 +149,43 @@ export default function GuardScanVisitorScreen() {
         paddingBottom: insets.bottom + 16,
       }}
     >
-      <Pressable
-        onPress={() => router.back()}
-        className="mb-3 flex-row items-center gap-1 self-start"
-        hitSlop={8}
-      >
-        <Icon
-          family="ionic"
-          name="chevron-back"
-          size={20}
-          color={colors.primary}
-        />
-        <Text variant="label" tone="primary">
-          Back
-        </Text>
-      </Pressable>
-
-      <Text variant="title" className="text-role-guard">
-        Scan QR
-      </Text>
-      <Text variant="body" tone="muted" className="mt-1 mb-5">
-        Align the guest or staff pass inside the square.
-      </Text>
+      <VisitorFlowHeader
+        role="guard"
+        title="Scan QR"
+        subtitle="Align the guest or staff pass inside the square."
+        showBack
+      />
 
       {success ? (
         <View className="flex-1 items-center justify-center px-4">
-          <View className="mb-4 h-28 w-28 items-center justify-center rounded-full bg-success/15">
-            <Icon
-              family="ionic"
-              name="checkmark-circle"
-              size={88}
-              color={colors.success}
-            />
+          <View className="mb-5 w-full max-w-sm rounded-2xl border border-success/30 bg-success/10 px-6 py-8">
+            <View className="mb-4 self-center">
+              <View className="h-24 w-24 items-center justify-center rounded-full bg-success/15">
+                <Icon
+                  family="ionic"
+                  name="checkmark-circle"
+                  size={72}
+                  color={colors.success}
+                />
+              </View>
+            </View>
+            <Text variant="title" className="text-center text-success">
+              {success.title}
+            </Text>
+            <Text variant="body" tone="muted" className="mt-2 text-center">
+              {success.detail}
+            </Text>
           </View>
-          <Text variant="title" className="text-center text-success">
-            {success.title}
-          </Text>
-          <Text
-            variant="caption"
-            tone="muted"
-            className="mt-2 text-center px-2"
-          >
-            {success.detail}
-          </Text>
           {success.staffHref ? (
             <Button
-              className="mt-8"
+              className="w-full max-w-sm"
               label="View staff"
               fullWidth
               onPress={() => router.push(success.staffHref!)}
             />
           ) : null}
           <Button
-            className="mt-3"
+            className="mt-3 w-full max-w-sm"
             label="Scan another"
             variant={success.staffHref ? 'outline' : 'accent'}
             fullWidth
@@ -211,12 +195,21 @@ export default function GuardScanVisitorScreen() {
       ) : (
         <>
           {!permission?.granted ? (
-            <View className="mb-4 rounded-xl border border-border bg-card px-4 py-4">
-              <Text variant="body" tone="muted">
-                Camera permission is needed to scan QR passes.
+            <View className="mb-4 rounded-2xl border border-border bg-card px-4 py-5">
+              <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Icon
+                  family="ionic"
+                  name="camera-outline"
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
+              <Text variant="label">Camera access needed</Text>
+              <Text variant="body" tone="muted" className="mt-1">
+                Allow camera access to scan guest and staff QR passes.
               </Text>
               <Button
-                className="mt-3"
+                className="mt-4"
                 label="Allow camera"
                 onPress={() => void requestPermission()}
               />
@@ -224,7 +217,7 @@ export default function GuardScanVisitorScreen() {
           ) : (
             <View className="items-center">
               <View
-                className="overflow-hidden rounded-2xl border-2 border-role-guard"
+                className="overflow-hidden rounded-2xl border-2 border-role-guard bg-black"
                 style={{ width: squareSize, height: squareSize }}
               >
                 <CameraView
@@ -240,18 +233,19 @@ export default function GuardScanVisitorScreen() {
                   }
                 />
               </View>
+              <Text variant="caption" tone="muted" className="mt-4 text-center">
+                {locked ? 'Processing…' : 'Hold steady over the code'}
+              </Text>
             </View>
           )}
 
           {error ? (
-            <Text variant="caption" tone="danger" className="mt-4 text-center">
-              {error}
-            </Text>
-          ) : (
-            <Text variant="caption" tone="muted" className="mt-4 text-center">
-              {locked ? 'Processing…' : 'Hold steady over the code'}
-            </Text>
-          )}
+            <View className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3">
+              <Text variant="caption" tone="danger" className="text-center">
+                {error}
+              </Text>
+            </View>
+          ) : null}
 
           <Button
             className="mt-auto"

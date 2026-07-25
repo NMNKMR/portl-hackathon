@@ -12,15 +12,18 @@ import {
   type Complaint,
 } from '@/lib/api/complaints';
 import { cn } from '@/lib/cn';
-import { formatJoinDate } from '@/lib/format';
+import { formatVisitorListTimestamp } from '@/lib/format';
 import { useThemeColors } from '@/lib/theme-colors';
+
+const TAG_CLASS = 'px-1.5 py-0';
+const TAG_LABEL_CLASS = 'text-[10px] leading-3';
 
 export type ComplaintCardProps = {
   complaint: Complaint;
   onPress?: () => void;
-  /** Optional footer slot (e.g. admin quick actions on list — prefer detail screen). */
   footer?: ReactNode;
   className?: string;
+  hideFlat?: boolean;
 };
 
 export function ComplaintCard({
@@ -28,15 +31,20 @@ export function ComplaintCard({
   onPress,
   footer,
   className,
+  hideFlat = false,
 }: ComplaintCardProps) {
   const colors = useThemeColors();
   const badge = complaintStatusBadge(complaint.status);
+  const categoryLabel = complaintCategoryLabel(complaint.category);
+  const flatLabel = complaintFlatLabel(complaint);
+  const timestamp = formatVisitorListTimestamp(complaint.created_at);
   const hasPhoto = Boolean(complaint.photo_url?.trim());
+  const excerpt = complaint.description?.trim() || 'No description';
 
   const body = (
     <View
       className={cn(
-        'mb-3 rounded-xl border border-border bg-card px-4 py-3',
+        'mb-3 rounded-2xl border border-border bg-card p-3',
         className,
       )}
     >
@@ -44,12 +52,12 @@ export function ComplaintCard({
         {hasPhoto ? (
           <Image
             source={{ uri: complaint.photo_url! }}
-            style={{ width: 56, height: 56, borderRadius: 12 }}
+            style={{ width: 52, height: 52, borderRadius: 16 }}
             contentFit="cover"
             accessibilityLabel="Complaint photo"
           />
         ) : (
-          <View className="h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
+          <View className="h-[52px] w-[52px] items-center justify-center rounded-2xl bg-primary/10">
             <Icon
               family="ionic"
               name="construct-outline"
@@ -59,46 +67,65 @@ export function ComplaintCard({
           </View>
         )}
 
-        <View className="min-w-0 flex-1">
-          <View className="flex-row items-start justify-between gap-2">
+        <View className="relative min-h-[52px] min-w-0 flex-1">
+          <View className="flex-row items-start gap-2 pr-7">
             <View className="min-w-0 flex-1">
-              <Text variant="label">
-                {complaintCategoryLabel(complaint.category)}
+              <Text variant="label" numberOfLines={1}>
+                {categoryLabel}
               </Text>
-              <Text variant="caption" tone="muted" className="mt-0.5">
-                {complaintFlatLabel(complaint)} ·{' '}
-                {formatJoinDate(complaint.created_at)}
+              <Text variant="caption" tone="muted" className="mt-0.5" numberOfLines={2}>
+                {excerpt}
               </Text>
             </View>
-            <View className="flex-row items-center gap-1">
-              <Badge tone={badge.tone} label={badge.label} />
-              {onPress ? (
-                <Icon
-                  family="ionic"
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.muted}
+            <View className="max-w-[46%] shrink-0 flex-row flex-wrap justify-end gap-1">
+              <Badge
+                tone={badge.tone}
+                label={badge.label}
+                className={TAG_CLASS}
+                labelClassName={TAG_LABEL_CLASS}
+              />
+              {!hideFlat ? (
+                <Badge
+                  tone="muted"
+                  label={flatLabel}
+                  className={TAG_CLASS}
+                  labelClassName={TAG_LABEL_CLASS}
                 />
               ) : null}
             </View>
           </View>
 
-          {complaint.description ? (
-            <Text variant="body" className="mt-2" numberOfLines={2}>
-              {complaint.description}
+          {timestamp ? (
+            <Text
+              variant="caption"
+              tone="muted"
+              className="mt-2 text-[11px] leading-4 opacity-80"
+            >
+              Raised · {timestamp}
             </Text>
+          ) : null}
+
+          {onPress ? (
+            <View className="absolute bottom-0 right-0">
+              <Icon
+                family="ionic"
+                name="arrow-forward"
+                size={20}
+                color={colors.muted}
+              />
+            </View>
           ) : null}
         </View>
       </View>
 
-      {footer ? <View className="mt-3">{footer}</View> : null}
+      {footer ? <View className="mt-3 border-t border-border pt-3">{footer}</View> : null}
     </View>
   );
 
   if (!onPress) return body;
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button">
+    <Pressable onPress={onPress} accessibilityRole="button" className="active:opacity-90">
       {body}
     </Pressable>
   );

@@ -1,4 +1,4 @@
-import { useRouter, useSegments, type Href } from "expo-router";
+import { useLocalSearchParams, useRouter, useSegments, type Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -361,8 +361,11 @@ export default function AppHomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const segments = useSegments();
+  const params = useLocalSearchParams<{ manage?: string }>();
   const colors = useThemeColors();
   const membershipsQuery = useMyMemberships();
+  const forceHubView =
+    params.manage === "1" || params.manage === "true";
 
   const memberships = membershipsQuery.data ?? [];
   const approved = useMemo(
@@ -387,6 +390,7 @@ export default function AppHomeScreen() {
   const primaryApproved =
     approved.find((m) => m.role === "admin") ?? approved[0] ?? null;
   const shouldAutoRedirect =
+    !forceHubView &&
     !membershipsQuery.isLoading &&
     !membershipsQuery.isError &&
     Boolean(primaryApproved) &&

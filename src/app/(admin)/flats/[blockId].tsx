@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,8 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdminScreenHeader } from '@/components/admin/admin-screen-header';
 import { FlatDetailSheet } from '@/components/admin/flat-detail-sheet';
 import { FlatRangePanel } from '@/components/admin/flat-range-panel';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import { useAdminSocietyId } from '@/hooks/use-admin-society-id';
 import {
@@ -25,7 +25,6 @@ import type { Flat } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function BlockFlatsScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const params = useLocalSearchParams<{ blockId?: string }>();
@@ -89,12 +88,7 @@ export default function BlockFlatsScreen() {
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         <Text variant="title">Block not found</Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }

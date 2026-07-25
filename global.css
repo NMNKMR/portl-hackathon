@@ -25,6 +25,11 @@
   --color-role-resident: #4ade80;
   --color-role-guard: #22d3ee;
 
+  /* Dashboard stat cards — fixed palette, independent of role accent */
+  --color-stat-teal: #0f766e;
+  --color-stat-orange: #f97316;
+  --color-stat-blue: #3b82f6;
+
   /* Third-party brand (for Icon props via useThemeColors) */
   --color-google: #ea4335;
 
@@ -58,6 +63,9 @@
       --color-card: #ffffff;
       --color-google: #ea4335;
       --color-on-primary: #ffffff;
+      --color-stat-teal: #0f766e;
+      --color-stat-orange: #f97316;
+      --color-stat-blue: #3b82f6;
     }
 
     @variant dark {
@@ -73,6 +81,9 @@
       --color-card: #2a2724;
       --color-google: #ea4335;
       --color-on-primary: #ffffff;
+      --color-stat-teal: #14b8a6;
+      --color-stat-orange: #fb923c;
+      --color-stat-blue: #60a5fa;
     }
   }
 }

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -7,15 +7,20 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { VisitorDateFilterChips } from '@/components/visitors/visitor-date-filter-chips';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { VisitorRequestCard } from '@/components/visitors/visitor-request-card';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useFlatVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
 import { membershipFlatLabel } from '@/lib/api/society';
 import type { VisitorRequest } from '@/lib/api/visitors';
+import {
+  filterVisitorsByDate,
+  type VisitorDateRange,
+} from '@/lib/visitor-filters';
 import { useThemeColors } from '@/lib/theme-colors';
 
 type ListRow =
@@ -31,6 +36,7 @@ export default function ResidentVisitorsScreen() {
     filter?: string;
   }>();
   const pendingOnly = params.filter === 'pending';
+  const [dateRange, setDateRange] = useState<VisitorDateRange>('week');
 
   const memberships = useMyMemberships();
   const membership = useMemo(() => {
@@ -53,7 +59,7 @@ export default function ResidentVisitorsScreen() {
   useVisitorRealtime({ flatId, enabled: Boolean(flatId) });
 
   const rows = useMemo((): ListRow[] => {
-    const list = visitors.data ?? [];
+    const list = filterVisitorsByDate(visitors.data ?? [], dateRange);
     const pending = list.filter((v) => v.status === 'pending');
     const others = list.filter((v) => v.status !== 'pending');
 
@@ -67,7 +73,7 @@ export default function ResidentVisitorsScreen() {
 
     const out: ListRow[] = [];
     if (pending.length > 0) {
-      out.push({ kind: 'header', key: 'h-pending', title: 'Pending' });
+      out.push({ kind: 'header', key: 'h-pending', title: 'Needs approval' });
       for (const visitor of pending) {
         out.push({ kind: 'visitor', key: visitor.id, visitor });
       }
@@ -76,14 +82,14 @@ export default function ResidentVisitorsScreen() {
       out.push({
         kind: 'header',
         key: 'h-others',
-        title: pending.length > 0 ? 'Earlier' : 'Visitors',
+        title: pending.length > 0 ? 'Earlier' : 'All visitors',
       });
       for (const visitor of others) {
         out.push({ kind: 'visitor', key: visitor.id, visitor });
       }
     }
     return out;
-  }, [pendingOnly, visitors.data]);
+  }, [dateRange, pendingOnly, visitors.data]);
 
   const openDetail = (id: string) => {
     const qs = societyId
@@ -120,45 +126,51 @@ export default function ResidentVisitorsScreen() {
             onPress={() => router.replace('/(app)' as Href)}
           />
         </View>
-        <DashboardBottomNav
-          role="resident"
-          roleAccent={colors.roleResident}
-          activeTab="visitors"
-        />
       </View>
     );
   }
 
+  const contextLine = [membershipFlatLabel(membership), membership.societies?.name]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-1" style={{ paddingTop: insets.top + 16 }}>
-        <View className="mb-4 px-6">
-          <Text variant="title" className="text-role-resident">
-            {pendingOnly ? 'Pending visitors' : 'Visitors'}
-          </Text>
-          <Text variant="body" tone="muted" className="mt-1">
-            {[membershipFlatLabel(membership), membership.societies?.name]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-          {pendingOnly ? (
-            <Button
-              className="mt-3 self-start px-0"
-              variant="ghost"
-              size="sm"
-              label="Show all visitors"
-              onPress={() => {
-                const href = societyId
-                  ? (`/(resident)/visitors?societyId=${encodeURIComponent(societyId)}` as Href)
-                  : ('/(resident)/visitors' as Href);
-                router.replace(href);
-              }}
+      <View className="flex-1 px-5" style={{ paddingTop: insets.top + 16 }}>
+        <VisitorFlowHeader
+          role="resident"
+          title={pendingOnly ? 'Pending visitors' : 'Visitors'}
+          subtitle={contextLine}
+          rightSlot={
+            pendingOnly ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                label="Show all"
+                onPress={() => {
+                  const href = societyId
+                    ? (`/(resident)/visitors?societyId=${encodeURIComponent(societyId)}` as Href)
+                    : ('/(resident)/visitors' as Href);
+                  router.replace(href);
+                }}
+              />
+            ) : undefined
+          }
+        />
+
+        {!pendingOnly ? (
+          <View className="mt-4">
+            <VisitorDateFilterChips
+              value={dateRange}
+              onChange={setDateRange}
+              activeContainerClassName="border-role-resident bg-role-resident/15"
+              activeLabelClassName="text-role-resident"
             />
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
         {visitors.isError ? (
-          <Text variant="caption" tone="danger" className="mb-2 px-6">
+          <Text variant="caption" tone="danger" className="mb-2 mt-4">
             {visitors.error instanceof Error
               ? visitors.error.message
               : 'Could not load visitors'}
@@ -171,11 +183,11 @@ export default function ResidentVisitorsScreen() {
           </View>
         ) : (
           <FlatList
+            className="mt-5"
             data={rows}
             keyExtractor={(item) => item.key}
             contentContainerStyle={{
-              paddingHorizontal: 24,
-              paddingBottom: 24,
+              paddingBottom: 40,
               flexGrow: 1,
             }}
             refreshing={visitors.isRefetching}
@@ -190,21 +202,22 @@ export default function ResidentVisitorsScreen() {
                     color={colors.muted}
                   />
                 </View>
-                <Text variant="body" tone="muted" className="text-center">
+                <Text variant="label" className="text-center">
+                  {pendingOnly ? 'Nothing pending' : 'No visitors yet'}
+                </Text>
+                <Text variant="body" tone="muted" className="mt-1 text-center">
                   {pendingOnly
-                    ? 'No pending visitor requests for your flat.'
-                    : 'No visitor requests yet. Guards will appear here when they register someone for your flat.'}
+                    ? 'New gate requests for your flat will show up here.'
+                    : dateRange === 'all'
+                      ? 'Gate registrations and pre-approvals for your flat appear here.'
+                      : 'Nothing in this date range. Try a wider filter.'}
                 </Text>
               </View>
             }
             renderItem={({ item }) => {
               if (item.kind === 'header') {
                 return (
-                  <Text
-                    variant="label"
-                    tone="muted"
-                    className="mb-2 mt-1 uppercase tracking-wide"
-                  >
+                  <Text variant="label" className="mb-2 mt-2">
                     {item.title}
                   </Text>
                 );
@@ -212,27 +225,14 @@ export default function ResidentVisitorsScreen() {
               return (
                 <VisitorRequestCard
                   visitor={item.visitor}
+                  hideFlat
                   onPress={() => openDetail(item.visitor.id)}
-                  trailing={
-                    <Icon
-                      family="ionic"
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.muted}
-                    />
-                  }
                 />
               );
             }}
           />
         )}
       </View>
-
-      <DashboardBottomNav
-        role="resident"
-        roleAccent={colors.roleResident}
-        activeTab="visitors"
-      />
     </View>
   );
 }

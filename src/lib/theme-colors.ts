@@ -22,6 +22,9 @@ export function useThemeColors() {
     roleAdmin,
     roleResident,
     roleGuard,
+    statTeal,
+    statOrange,
+    statBlue,
   ] = useCSSVariable([
     '--color-background',
     '--color-foreground',
@@ -38,6 +41,9 @@ export function useThemeColors() {
     '--color-role-admin',
     '--color-role-resident',
     '--color-role-guard',
+    '--color-stat-teal',
+    '--color-stat-orange',
+    '--color-stat-blue',
   ]) as Array<string | number | undefined>;
 
   return {
@@ -56,5 +62,8 @@ export function useThemeColors() {
     roleAdmin: String(roleAdmin ?? ''),
     roleResident: String(roleResident ?? ''),
     roleGuard: String(roleGuard ?? ''),
+    statTeal: String(statTeal ?? ''),
+    statOrange: String(statOrange ?? ''),
+    statBlue: String(statBlue ?? ''),
   };
 }

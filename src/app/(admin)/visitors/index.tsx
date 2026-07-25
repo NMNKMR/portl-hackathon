@@ -7,11 +7,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import { Button } from '@/components/ui/button';
 import { AppBottomSheet } from '@/components/ui/bottom-sheet';
-import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
+import { VisitorDetailContent } from '@/components/visitors/visitor-detail-content';
+import { VisitorDateFilterChips } from '@/components/visitors/visitor-date-filter-chips';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { VisitorRequestCard } from '@/components/visitors/visitor-request-card';
 import { useAdminSocietyId } from '@/hooks/use-admin-society-id';
 import { useSociety } from '@/hooks/use-society';
@@ -19,43 +20,12 @@ import {
   useSocietyVisitors,
   useVisitorRealtime,
 } from '@/hooks/use-visitors';
+import { type VisitorRequest } from '@/lib/api/visitors';
 import {
-  visitorFlatLabel,
-  type VisitorRequest,
-} from '@/lib/api/visitors';
-import { formatJoinDate } from '@/lib/format';
+  filterVisitorsByDate,
+  type VisitorDateRange,
+} from '@/lib/visitor-filters';
 import { useThemeColors } from '@/lib/theme-colors';
-import type { VisitorStatus } from '@/types/database';
-
-type BadgeTone = 'pending' | 'success' | 'danger' | 'muted';
-
-const STATUS_BADGE: Record<
-  VisitorStatus,
-  { tone: BadgeTone; label: string }
-> = {
-  pending: { tone: 'pending', label: 'Pending' },
-  approved: { tone: 'success', label: 'Approved' },
-  rejected: { tone: 'danger', label: 'Rejected' },
-  checked_in: { tone: 'success', label: 'Checked in' },
-  checked_out: { tone: 'muted', label: 'Checked out' },
-};
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="mb-3">
-      <Text variant="caption" tone="muted">
-        {label}
-      </Text>
-      <Text variant="body" className="mt-0.5">
-        {value}
-      </Text>
-    </View>
-  );
-}
 
 export default function AdminVisitorsScreen() {
   const router = useRouter();
@@ -67,13 +37,18 @@ export default function AdminVisitorsScreen() {
   useVisitorRealtime({ societyId, enabled: Boolean(societyId) });
 
   const [selected, setSelected] = useState<VisitorRequest | null>(null);
+  const [dateRange, setDateRange] = useState<VisitorDateRange>('week');
   const rows = visitors.data ?? [];
+  const filteredRows = useMemo(
+    () => filterVisitorsByDate(rows, dateRange),
+    [rows, dateRange],
+  );
   const societyName = society.data?.name ?? 'Your society';
 
   const subtitle = useMemo(() => {
     if (visitors.isLoading) return 'Loading log…';
-    return `${rows.length} visitor${rows.length === 1 ? '' : 's'} · ${societyName}`;
-  }, [rows.length, societyName, visitors.isLoading]);
+    return `${filteredRows.length} visitor${filteredRows.length === 1 ? '' : 's'} · ${societyName}`;
+  }, [filteredRows.length, societyName, visitors.isLoading]);
 
   if (societyIdLoading || (societyId && society.isLoading)) {
     return (
@@ -108,15 +83,21 @@ export default function AdminVisitorsScreen() {
         className="flex-1 px-5"
         style={{ paddingTop: insets.top + 16 }}
       >
-        <Text variant="title" className="text-role-admin">
-          Visitors
-        </Text>
-        <Text variant="body" tone="muted" className="mt-1">
-          {subtitle}
-        </Text>
-        <Text variant="caption" tone="muted" className="mt-1">
-          Society-wide log · read only
-        </Text>
+        <VisitorFlowHeader
+          role="admin"
+          title="Visitors"
+          subtitle={subtitle}
+          caption="Society-wide log · read only"
+        />
+
+        <View className="mt-4">
+          <VisitorDateFilterChips
+            value={dateRange}
+            onChange={setDateRange}
+            activeContainerClassName="border-role-admin bg-role-admin/15"
+            activeLabelClassName="text-role-admin"
+          />
+        </View>
 
         {visitors.isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -138,20 +119,25 @@ export default function AdminVisitorsScreen() {
           </View>
         ) : (
           <FlatList
-            className="mt-6"
-            data={rows}
+            className="mt-4"
+            data={filteredRows}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             refreshing={visitors.isRefetching}
             onRefresh={() => void visitors.refetch()}
             contentContainerStyle={{
-              paddingBottom: 24,
+              paddingBottom: 40,
               flexGrow: 1,
             }}
             ListEmptyComponent={
-              <View className="flex-1 items-center justify-center py-16">
-                <Text variant="body" tone="muted" className="text-center">
-                  No visitor requests yet.
+              <View className="flex-1 items-center justify-center py-16 px-4">
+                <Text variant="label" className="text-center">
+                  No visitors yet
+                </Text>
+                <Text variant="body" tone="muted" className="mt-1 text-center">
+                  {dateRange === 'all'
+                    ? 'Gate registrations and pre-approvals will appear here.'
+                    : 'Nothing in this date range. Try a wider filter.'}
                 </Text>
               </View>
             }
@@ -165,73 +151,15 @@ export default function AdminVisitorsScreen() {
         )}
       </View>
 
-      <DashboardBottomNav
-        role="admin"
-        roleAccent={colors.roleAdmin}
-        activeTab="visitors"
-      />
-
       <AppBottomSheet
         visible={selected != null}
         onClose={() => setSelected(null)}
-        title={selected?.visitor_name.trim() || 'Visitor'}
-        snapPoints={['45%', '70%']}
+        title="Visitor details"
+        snapPoints={['55%', '85%']}
       >
         {selected ? (
           <View className="px-1 pb-4">
-            <View className="mb-4 flex-row items-center justify-between gap-2">
-              <Text variant="caption" tone="muted">
-                {capitalize(selected.visitor_type)} ·{' '}
-                {visitorFlatLabel(selected)}
-              </Text>
-              <Badge
-                tone={STATUS_BADGE[selected.status].tone}
-                label={STATUS_BADGE[selected.status].label}
-              />
-            </View>
-
-            {selected.visitor_phone ? (
-              <DetailRow label="Phone" value={selected.visitor_phone} />
-            ) : null}
-            {selected.vehicle_number ? (
-              <DetailRow
-                label="Vehicle"
-                value={[
-                  selected.vehicle_number,
-                  selected.vehicle_type
-                    ? `(${capitalize(selected.vehicle_type)})`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              />
-            ) : null}
-            <DetailRow
-              label="Requested"
-              value={formatJoinDate(selected.requested_at) || '—'}
-            />
-            {selected.approved_at ? (
-              <DetailRow
-                label="Responded"
-                value={formatJoinDate(selected.approved_at) || '—'}
-              />
-            ) : null}
-            {selected.checked_in_at ? (
-              <DetailRow
-                label="Checked in"
-                value={formatJoinDate(selected.checked_in_at) || '—'}
-              />
-            ) : null}
-            {selected.checked_out_at ? (
-              <DetailRow
-                label="Checked out"
-                value={formatJoinDate(selected.checked_out_at) || '—'}
-              />
-            ) : null}
-            <DetailRow
-              label="Initiated by"
-              value={capitalize(selected.initiated_by)}
-            />
+            <VisitorDetailContent visitor={selected} variant="compact" />
           </View>
         ) : null}
       </AppBottomSheet>

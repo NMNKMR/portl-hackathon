@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import type { DashboardRole } from '@/components/role-dashboard-shell';
 import { AppBottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -64,10 +63,16 @@ function roleAccentClass(role: DashboardRole) {
   return 'text-role-resident';
 }
 
+function roleBadgeClass(role: DashboardRole) {
+  if (role === 'admin') return 'bg-role-admin/15 text-role-admin';
+  if (role === 'guard') return 'bg-role-guard/15 text-role-guard';
+  return 'bg-role-resident/15 text-role-resident';
+}
+
 type RowProps = {
   title: string;
   subtitle?: string;
-  icon: 'people' | 'grid' | 'share' | 'home' | 'create' | 'person';
+  icon: 'people' | 'grid' | 'share' | 'home' | 'create' | 'person' | 'business';
   onPress: () => void;
   colors: ReturnType<typeof useThemeColors>;
 };
@@ -82,14 +87,16 @@ function AccountRow({ title, subtitle, icon, onPress, colors }: RowProps) {
           ? ('share-outline' as const)
           : icon === 'home'
             ? ('home-outline' as const)
-            : icon === 'create'
-              ? ('create-outline' as const)
-              : ('person-outline' as const);
+            : icon === 'business'
+              ? ('business-outline' as const)
+              : icon === 'create'
+                ? ('create-outline' as const)
+                : ('person-outline' as const);
 
   return (
     <Pressable
       onPress={onPress}
-      className="mt-3 flex-row items-center justify-between rounded-xl border border-border bg-card px-4 py-3 active:opacity-90"
+      className="flex-row items-center justify-between rounded-xl border border-border bg-card px-4 py-3 active:opacity-90"
     >
       <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
         <Icon family="ionic" name={iconName} size={20} color={colors.primary} />
@@ -112,6 +119,49 @@ function AccountRow({ title, subtitle, icon, onPress, colors }: RowProps) {
   );
 }
 
+function SocietyCodeCard({
+  code,
+  societyName,
+  onShare,
+  colors,
+}: {
+  code: string;
+  societyName?: string | null;
+  onShare: () => void;
+  colors: ReturnType<typeof useThemeColors>;
+}) {
+  return (
+    <Pressable
+      onPress={onShare}
+      className="rounded-xl border border-border bg-card px-4 py-3 active:opacity-90"
+    >
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1 pr-3">
+          <Text variant="caption" tone="muted">
+            Invite code
+          </Text>
+          <Text variant="subtitle" className="mt-0.5 tracking-widest">
+            {code}
+          </Text>
+          {societyName ? (
+            <Text variant="caption" tone="muted" className="mt-1">
+              Share with new {societyName} members
+            </Text>
+          ) : null}
+        </View>
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+          <Icon
+            family="ionic"
+            name="share-outline"
+            size={20}
+            color={colors.primary}
+          />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export function AccountScreen({
   role,
   societyId,
@@ -125,6 +175,7 @@ export function AccountScreen({
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const accent = roleAccent(role, colors);
+  const showSocietySection = role !== 'guard';
   const { profile, refreshProfile } = useAuth();
 
   const [theme, setTheme] = useState<ThemePreference>('system');
@@ -166,6 +217,13 @@ export function AccountScreen({
     } catch {
       // cancelled
     }
+  };
+
+  const openMembershipHub = () => {
+    router.push({
+      pathname: '/(app)',
+      params: { manage: '1' },
+    } as Href);
   };
 
   const pickAvatar = async () => {
@@ -242,7 +300,7 @@ export function AccountScreen({
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingHorizontal: 20,
-          paddingBottom: 24,
+          paddingBottom: 40,
         }}
         keyboardShouldPersistTaps="handled"
       >
@@ -253,11 +311,8 @@ export function AccountScreen({
           Profile, society, and app preferences
         </Text>
 
-        {/* Profile */}
-        <Pressable
-          onPress={() => setEditOpen(true)}
-          className="mt-6 rounded-2xl border border-border bg-card px-4 py-4 active:opacity-90"
-        >
+        {/* Profile — display only; edit is a separate row */}
+        <View className="mt-6 rounded-2xl border border-border bg-card px-4 py-4">
           <View className="flex-row items-center gap-3">
             <View
               className="h-16 w-16 items-center justify-center overflow-hidden rounded-full"
@@ -281,113 +336,126 @@ export function AccountScreen({
               <Text variant="caption" tone="muted" className="mt-0.5">
                 {formatPhoneDisplay(profile?.phone)}
               </Text>
-              <Text
-                variant="caption"
-                className={`mt-1 ${roleAccentClass(role)}`}
+              <View
+                className={`mt-2 self-start rounded-full px-2.5 py-0.5 ${roleBadgeClass(role)}`}
               >
-                {roleLabel(role)}
-                {societyName ? ` · ${societyName}` : ''}
-              </Text>
-              {flatLabel ? (
-                <Text variant="caption" tone="muted" className="mt-0.5">
-                  {flatLabel}
+                <Text variant="caption" className={roleAccentClass(role)}>
+                  {roleLabel(role)}
                 </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View className="mt-3">
+          <AccountRow
+            title="Edit profile"
+            subtitle="Update your name and photo"
+            icon="create"
+            colors={colors}
+            onPress={() => setEditOpen(true)}
+          />
+        </View>
+
+        {showSocietySection ? (
+          <>
+            <Text variant="label" className="mt-8 mb-2">
+              Society
+            </Text>
+
+            {societyName ? (
+              <View className="rounded-xl border border-border bg-card px-4 py-3">
+                <View className="flex-row items-start gap-3">
+                  <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Icon
+                      family="ionic"
+                      name="business-outline"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text variant="label">{societyName}</Text>
+                    {flatLabel ? (
+                      <Text variant="caption" tone="muted" className="mt-0.5">
+                        {flatLabel}
+                      </Text>
+                    ) : (
+                      <Text variant="caption" tone="muted" className="mt-0.5">
+                        Current society
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            <View className="mt-3 gap-3">
+              {societyCode ? (
+                <SocietyCodeCard
+                  code={societyCode}
+                  societyName={societyName}
+                  onShare={() => void handleShareCode()}
+                  colors={colors}
+                />
+              ) : null}
+
+              <AccountRow
+                title="Switch society"
+                subtitle="View memberships or join another society"
+                icon="business"
+                colors={colors}
+                onPress={openMembershipHub}
+              />
+
+              {role === 'admin' && societyId ? (
+                <>
+                  <AccountRow
+                    title="Pending joins"
+                    subtitle="Approve or reject membership requests"
+                    icon="people"
+                    colors={colors}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(admin)/pending',
+                        params: { societyId },
+                      })
+                    }
+                  />
+                  <AccountRow
+                    title="Blocks & flats"
+                    subtitle="Organize towers, wings, and flats"
+                    icon="grid"
+                    colors={colors}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(admin)/flats',
+                        params: { societyId },
+                      } as Href)
+                    }
+                  />
+                </>
+              ) : null}
+
+              {role === 'resident' && showHousehold && societyId ? (
+                <AccountRow
+                  title="Household"
+                  subtitle="Pending household members for your flat"
+                  icon="people"
+                  colors={colors}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(resident)/household',
+                      params: {
+                        societyId,
+                        ...(flatId ? { flatId } : {}),
+                      },
+                    } as Href)
+                  }
+                />
               ) : null}
             </View>
-            <Icon
-              family="ionic"
-              name="create-outline"
-              size={20}
-              color={colors.muted}
-            />
-          </View>
-          <Text variant="caption" tone="primary" className="mt-3">
-            Edit name & photo
-          </Text>
-        </Pressable>
-
-        {/* Society */}
-        <Text variant="label" className="mt-8 mb-1">
-          Society
-        </Text>
-        {role === 'admin' && societyCode ? (
-          <Pressable
-            onPress={() => void handleShareCode()}
-            className="mt-3 rounded-xl border border-border bg-card px-4 py-3"
-          >
-            <Text variant="caption" tone="muted">
-              Society code
-            </Text>
-            <View className="mt-1 flex-row items-center justify-between">
-              <Text variant="subtitle" className="tracking-widest">
-                {societyCode}
-              </Text>
-              <Icon
-                family="ionic"
-                name="share-outline"
-                size={20}
-                color={colors.primary}
-              />
-            </View>
-            <Text variant="caption" tone="primary" className="mt-1">
-              Tap to share invite code
-            </Text>
-          </Pressable>
-        ) : null}
-
-        <AccountRow
-          title="Societies"
-          subtitle="Switch society or manage memberships"
-          icon="home"
-          colors={colors}
-          onPress={() => router.push('/(app)' as Href)}
-        />
-
-        {role === 'admin' && societyId ? (
-          <>
-            <AccountRow
-              title="Pending joins"
-              subtitle="Approve or reject membership requests"
-              icon="people"
-              colors={colors}
-              onPress={() =>
-                router.push({
-                  pathname: '/(admin)/pending',
-                  params: { societyId },
-                })
-              }
-            />
-            <AccountRow
-              title="Blocks & flats"
-              subtitle="Organize towers, wings, and flats"
-              icon="grid"
-              colors={colors}
-              onPress={() =>
-                router.push({
-                  pathname: '/(admin)/flats',
-                  params: { societyId },
-                } as Href)
-              }
-            />
           </>
-        ) : null}
-
-        {role === 'resident' && showHousehold && societyId ? (
-          <AccountRow
-            title="Household"
-            subtitle="Pending household members for your flat"
-            icon="people"
-            colors={colors}
-            onPress={() =>
-              router.push({
-                pathname: '/(resident)/household',
-                params: {
-                  societyId,
-                  ...(flatId ? { flatId } : {}),
-                },
-              } as Href)
-            }
-          />
         ) : null}
 
         {/* Theme */}
@@ -406,8 +474,6 @@ export function AccountScreen({
 
         <SignOutButton className="mt-10 mb-4" />
       </ScrollView>
-
-      <DashboardBottomNav role={role} roleAccent={accent} activeTab="account" />
 
       <AppBottomSheet
         visible={editOpen}

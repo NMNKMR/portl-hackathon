@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import { Icon } from '@/components/ui/icon';
 import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { useMyMemberships, useSocietyFlats } from '@/hooks/use-society';
 import {
   useCreateVisitorRequest,
@@ -42,6 +43,23 @@ const VEHICLE_TYPE_OPTIONS = [
   { value: 'bike', label: 'Bike' },
   { value: 'other', label: 'Other' },
 ];
+
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <View className="mb-5 rounded-2xl border border-border bg-card px-4 py-4">
+      <Text variant="label" className="mb-3">
+        {title}
+      </Text>
+      {children}
+    </View>
+  );
+}
 
 export default function GuardRegisterVisitorScreen() {
   const router = useRouter();
@@ -130,14 +148,8 @@ export default function GuardRegisterVisitorScreen() {
 
   const pickPhoto = () => {
     Alert.alert('Visitor photo', 'Choose a source', [
-      {
-        text: 'Camera',
-        onPress: () => void takePhoto(),
-      },
-      {
-        text: 'Photo library',
-        onPress: () => void pickFromLibrary(),
-      },
+      { text: 'Camera', onPress: () => void takePhoto() },
+      { text: 'Photo library', onPress: () => void pickFromLibrary() },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -285,86 +297,86 @@ export default function GuardRegisterVisitorScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+        <VisitorFlowHeader
+          role="guard"
+          title="Register visitor"
+          subtitle="Capture details at the gate for resident approval."
+          showBack
+        />
 
-        <Text variant="title" className="text-role-guard">
-          Register visitor
-        </Text>
-        <Text variant="body" tone="muted" className="mt-1 mb-6">
-          Capture details at the gate for resident approval.
-        </Text>
-
-        <Pressable
-          onPress={pickPhoto}
-          className="mb-5 h-36 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-card"
-        >
-          {photoUri ? (
-            <Image
-              key={photoUri}
-              source={{ uri: photoUri }}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="items-center px-4">
-              <Icon
-                family="ionic"
-                name="camera-outline"
-                size={32}
-                color={colors.muted}
+        <FormSection title="Photo (optional)">
+          <Pressable
+            onPress={pickPhoto}
+            className="h-40 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-neutral-50 dark:bg-neutral-900"
+          >
+            {photoUri ? (
+              <Image
+                key={photoUri}
+                source={{ uri: photoUri }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
               />
-              <Text variant="label" className="mt-2">
-                Add photo
-              </Text>
-              <Text variant="caption" tone="muted" className="mt-0.5">
-                Camera or library (optional)
-              </Text>
-            </View>
-          )}
-        </Pressable>
-        {photoUri ? (
-          <Pressable onPress={() => setPhotoUri(null)} className="mb-4 self-start">
-            <Text variant="caption" tone="danger">
-              Remove photo
-            </Text>
+            ) : (
+              <View className="items-center px-4">
+                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Icon
+                    family="ionic"
+                    name="camera-outline"
+                    size={24}
+                    color={colors.primary}
+                  />
+                </View>
+                <Text variant="label">Add photo</Text>
+                <Text variant="caption" tone="muted" className="mt-0.5">
+                  Camera or library
+                </Text>
+              </View>
+            )}
           </Pressable>
-        ) : null}
+          {photoUri ? (
+            <Pressable
+              onPress={() => {
+                setPhotoUri(null);
+                setPhotoBase64(null);
+              }}
+              className="mt-3 self-start"
+            >
+              <Text variant="caption" tone="danger">
+                Remove photo
+              </Text>
+            </Pressable>
+          ) : null}
+        </FormSection>
 
-        <View className="mb-4">
+        <FormSection title="Visitor">
           <TextInput
-            label="Visitor name"
+            label="Full name"
             value={visitorName}
             onChangeText={setVisitorName}
-            placeholder="Full name"
+            placeholder="Visitor name"
             autoCapitalize="words"
           />
-        </View>
+          <View className="mt-4">
+            <SelectField
+              label="Visitor type"
+              placeholder="Select type"
+              value={visitorType}
+              options={VISITOR_TYPE_OPTIONS}
+              onChange={(value) => setVisitorType(value as VisitorType)}
+            />
+          </View>
+          <View className="mt-4">
+            <TextInput
+              label="Phone (optional)"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Visitor phone"
+              keyboardType="phone-pad"
+            />
+          </View>
+        </FormSection>
 
-        <View className="mb-4">
-          <SelectField
-            label="Visitor type"
-            placeholder="Select type"
-            value={visitorType}
-            options={VISITOR_TYPE_OPTIONS}
-            onChange={(value) => setVisitorType(value as VisitorType)}
-          />
-        </View>
-
-        <View className="mb-4">
+        <FormSection title="Destination">
           <SelectField
             label="Flat"
             placeholder="Select flat"
@@ -375,63 +387,51 @@ export default function GuardRegisterVisitorScreen() {
             }
             onChange={setFlatId}
           />
-        </View>
+          {flatId ? (
+            <View className="mt-4">
+              <SelectField
+                label="Notify resident"
+                placeholder="Select member"
+                value={notifyMembershipId}
+                options={memberOptions}
+                emptyMessage={
+                  residentsQuery.isLoading
+                    ? 'Loading members…'
+                    : residentsQuery.isError
+                      ? residentsQuery.error instanceof Error
+                        ? residentsQuery.error.message
+                        : 'Could not load members'
+                      : 'No approved residents on this flat'
+                }
+                onChange={setNotifyMembershipId}
+              />
+              <Text variant="caption" tone="muted" className="mt-1.5">
+                Push goes to this person. Defaults to the flat owner.
+              </Text>
+            </View>
+          ) : null}
+        </FormSection>
 
-        {flatId ? (
-          <View className="mb-4">
-            <SelectField
-              label="Notify resident"
-              placeholder="Select member"
-              value={notifyMembershipId}
-              options={memberOptions}
-              emptyMessage={
-                residentsQuery.isLoading
-                  ? 'Loading members…'
-                  : residentsQuery.isError
-                    ? residentsQuery.error instanceof Error
-                      ? residentsQuery.error.message
-                      : 'Could not load members — run migration 010'
-                    : 'No approved residents on this flat'
-              }
-              onChange={setNotifyMembershipId}
-            />
-            <Text variant="caption" tone="muted" className="mt-1.5">
-              Push goes to this person. Defaults to the flat owner.
-            </Text>
-          </View>
-        ) : null}
-
-        <View className="mb-4">
-          <TextInput
-            label="Phone (optional)"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Visitor phone"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View className="mb-4">
+        <FormSection title="Vehicle (optional)">
           <SelectField
-            label="Vehicle type (optional)"
+            label="Vehicle type"
             placeholder="Select vehicle"
             value={vehicleType}
             options={VEHICLE_TYPE_OPTIONS}
             onChange={(value) => setVehicleType(value as VehicleType)}
           />
-        </View>
-
-        {vehicleType && vehicleType !== 'none' ? (
-          <View className="mb-4">
-            <TextInput
-              label="Vehicle number (optional)"
-              value={vehicleNumber}
-              onChangeText={setVehicleNumber}
-              placeholder="e.g. MH 01 AB 1234"
-              autoCapitalize="characters"
-            />
-          </View>
-        ) : null}
+          {vehicleType && vehicleType !== 'none' ? (
+            <View className="mt-4">
+              <TextInput
+                label="Vehicle number"
+                value={vehicleNumber}
+                onChangeText={setVehicleNumber}
+                placeholder="e.g. MH 01 AB 1234"
+                autoCapitalize="characters"
+              />
+            </View>
+          ) : null}
+        </FormSection>
 
         {error ? (
           <Text variant="caption" tone="danger" className="mb-3">

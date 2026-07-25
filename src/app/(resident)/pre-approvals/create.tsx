@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as Contacts from 'expo-contacts';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import { Icon } from '@/components/ui/icon';
 import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useCreateGuestPreApproval } from '@/hooks/use-visitors';
 import { uploadVisitorPhoto } from '@/lib/api/visitor-photos';
@@ -38,6 +39,23 @@ const VEHICLE_TYPE_OPTIONS = [
   { value: 'bike', label: 'Bike' },
   { value: 'other', label: 'Other' },
 ];
+
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <View className="mb-5 rounded-2xl border border-border bg-card px-4 py-4">
+      <Text variant="label" className="mb-3">
+        {title}
+      </Text>
+      {children}
+    </View>
+  );
+}
 
 export default function ResidentPreApproveCreateScreen() {
   const router = useRouter();
@@ -208,32 +226,15 @@ export default function ResidentPreApproveCreateScreen() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
-
-        <Text variant="title" className="text-role-resident">
-          Pre-approve visitor
-        </Text>
-        <Text variant="body" tone="muted" className="mt-1 mb-5">
-          Create the pass first. Generate a QR on the next screen if you want to
-          share it.
-        </Text>
+        <VisitorFlowHeader
+          role="resident"
+          title="Pre-approve visitor"
+          subtitle="Create the pass first. Generate a QR on the next screen to share."
+          showBack
+        />
 
         <Button
-          className="mb-4"
+          className="mb-5"
           label="Import from contacts"
           variant="outline"
           icon={{ family: 'ionic', name: 'people-outline' }}
@@ -241,97 +242,116 @@ export default function ResidentPreApproveCreateScreen() {
           onPress={() => void importContact()}
         />
 
-        <Pressable
-          onPress={() => void pickPhoto()}
-          className="mb-4 h-36 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-card"
-        >
-          {photoUri ? (
-            <Image
-              key={photoUri}
-              source={{ uri: photoUri }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
-          ) : (
-            <View className="items-center px-4">
-              <Icon
-                family="ionic"
-                name="camera-outline"
-                size={28}
-                color={colors.muted}
+        <FormSection title="Photo (optional)">
+          <Pressable
+            onPress={() => void pickPhoto()}
+            className="h-40 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-neutral-50 dark:bg-neutral-900"
+          >
+            {photoUri ? (
+              <Image
+                key={photoUri}
+                source={{ uri: photoUri }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
               />
-              <Text variant="label" className="mt-2">
-                {photoHint ? 'Photo recommended' : 'Add photo (optional)'}
+            ) : (
+              <View className="items-center px-4">
+                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Icon
+                    family="ionic"
+                    name="camera-outline"
+                    size={24}
+                    color={colors.primary}
+                  />
+                </View>
+                <Text variant="label">
+                  {photoHint ? 'Photo recommended' : 'Add photo'}
+                </Text>
+                <Text variant="caption" tone="muted" className="mt-0.5 text-center">
+                  Helps guards verify cab, delivery, or service visitors
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          {photoUri ? (
+            <Pressable
+              onPress={() => {
+                setPhotoUri(null);
+                setPhotoBase64(null);
+              }}
+              className="mt-3 self-start"
+            >
+              <Text variant="caption" tone="danger">
+                Remove photo
               </Text>
-              <Text variant="caption" tone="muted" className="mt-1 text-center">
-                Helps the guard verify cab, delivery, or service visitors
-              </Text>
-            </View>
-          )}
-        </Pressable>
+            </Pressable>
+          ) : null}
+        </FormSection>
 
-        <TextInput
-          label="Name"
-          value={visitorName}
-          onChangeText={setVisitorName}
-          autoCapitalize="words"
-          placeholder="Visitor name"
-        />
-        <TextInput
-          className="mt-3"
-          label="Phone"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          placeholder="Optional"
-        />
-
-        <View className="mt-3">
-          <SelectField
-            label="Type"
-            value={visitorType}
-            onChange={(v) => setVisitorType(v as VisitorType)}
-            options={VISITOR_TYPE_OPTIONS}
+        <FormSection title="Visitor">
+          <TextInput
+            label="Full name"
+            value={visitorName}
+            onChangeText={setVisitorName}
+            autoCapitalize="words"
+            placeholder="Visitor name"
           />
-        </View>
+          <View className="mt-4">
+            <TextInput
+              label="Phone (optional)"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder="Guest phone"
+            />
+          </View>
+          <View className="mt-4">
+            <SelectField
+              label="Type"
+              value={visitorType}
+              onChange={(v) => setVisitorType(v as VisitorType)}
+              options={VISITOR_TYPE_OPTIONS}
+            />
+          </View>
+        </FormSection>
 
-        <View className="mt-3">
+        <FormSection title="Vehicle (optional)">
           <SelectField
-            label="Vehicle"
+            label="Vehicle type"
             value={vehicleType}
             onChange={(v) => setVehicleType(v as VehicleType)}
             options={VEHICLE_TYPE_OPTIONS}
           />
-        </View>
+          {vehicleType && vehicleType !== 'none' ? (
+            <View className="mt-4">
+              <TextInput
+                label="Vehicle number"
+                value={vehicleNumber}
+                onChangeText={setVehicleNumber}
+                autoCapitalize="characters"
+                placeholder="Optional"
+              />
+            </View>
+          ) : null}
+        </FormSection>
 
-        {vehicleType && vehicleType !== 'none' ? (
+        <FormSection title="Pass settings">
           <TextInput
-            className="mt-3"
-            label="Vehicle number"
-            value={vehicleNumber}
-            onChangeText={setVehicleNumber}
-            autoCapitalize="characters"
-            placeholder="Optional"
+            label="Allowed entries"
+            value={maxScans}
+            onChangeText={setMaxScans}
+            keyboardType="number-pad"
+            helperText="Use more than 1 for parties or get-togethers"
           />
-        ) : null}
-
-        <TextInput
-          className="mt-3"
-          label="Allowed entries"
-          value={maxScans}
-          onChangeText={setMaxScans}
-          keyboardType="number-pad"
-          helperText="Use more than 1 for parties / get-togethers (shared pass)"
-        />
+        </FormSection>
 
         {error ? (
-          <Text variant="caption" tone="danger" className="mt-3">
+          <Text variant="caption" tone="danger" className="mb-3">
             {error}
           </Text>
         ) : null}
 
         <Button
-          className="mt-6"
           label="Create pre-approval"
           fullWidth
           loading={submitting}

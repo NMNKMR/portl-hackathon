@@ -52,7 +52,7 @@ export default function GuardStaffIndex() {
       societyId={membership.society_id}
       membershipId={membership.id}
       canCreate={false}
-      titleClassName="text-role-guard"
+      showBack={false}
       detailHref={(id) =>
         `/(guard)/staff/${id}?societyId=${encodeURIComponent(membership.society_id)}` as Href
       }

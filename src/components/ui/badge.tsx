@@ -31,12 +31,22 @@ const badgeTextTone: Record<
 type BadgeProps = VariantProps<typeof badgeVariants> & {
   label: string;
   className?: string;
+  labelClassName?: string;
 };
 
-export function Badge({ tone = 'muted', label, className }: BadgeProps) {
+export function Badge({
+  tone = 'muted',
+  label,
+  className,
+  labelClassName,
+}: BadgeProps) {
   return (
     <View className={cn(badgeVariants({ tone }), className)}>
-      <Text variant="caption" tone={badgeTextTone[tone ?? 'muted']} className="capitalize">
+      <Text
+        variant="caption"
+        tone={badgeTextTone[tone ?? 'muted']}
+        className={cn('capitalize', labelClassName)}
+      >
         {label}
       </Text>
     </View>

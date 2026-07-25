@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ComplaintCard } from '@/components/complaints/complaint-card';
 import { AppBottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
@@ -153,21 +153,7 @@ export default function ResidentComplaintsScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-1 px-5 pt-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+        <ScreenBackButton className="mb-3" />
 
         <View className="mb-4 flex-row items-start justify-between gap-3">
           <View className="flex-1">
@@ -205,6 +191,7 @@ export default function ResidentComplaintsScreen() {
             renderItem={({ item }) => (
               <ComplaintCard
                 complaint={item}
+                hideFlat
                 onPress={() => openDetail(item.id)}
               />
             )}

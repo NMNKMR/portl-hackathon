@@ -3,15 +3,14 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import { useComplaint } from '@/hooks/use-complaints';
 import { useMyMemberships } from '@/hooks/use-society';
@@ -92,12 +91,7 @@ export default function ResidentComplaintDetailScreen() {
         <Text variant="body" tone="muted" className="mt-2">
           No approved resident flat.
         </Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }
@@ -114,12 +108,7 @@ export default function ResidentComplaintDetailScreen() {
             ? complaintQuery.error.message
             : 'Could not load this complaint'}
         </Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }
@@ -134,10 +123,9 @@ export default function ResidentComplaintDetailScreen() {
         <Text variant="body" tone="muted" className="mt-2">
           This complaint may have been removed or you no longer have access.
         </Text>
-        <Button
+        <ScreenBackButton
           className="mt-6"
           label="Back to complaints"
-          fullWidth
           onPress={() => {
             const href = membership.society_id
               ? ({
@@ -160,21 +148,7 @@ export default function ResidentComplaintDetailScreen() {
       style={{ paddingTop: insets.top + 8 }}
     >
       <View className="px-5">
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-2 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+        <ScreenBackButton className="mb-2" />
       </View>
 
       <ScrollView

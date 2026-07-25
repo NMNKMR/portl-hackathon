@@ -6,11 +6,5 @@ export default function GuardStaffDetail() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
 
-  return (
-    <StaffDetailScreen
-      staffId={id}
-      titleClassName="text-role-guard"
-      mode="verify"
-    />
-  );
+  return <StaffDetailScreen staffId={id} role="guard" mode="verify" />;
 }

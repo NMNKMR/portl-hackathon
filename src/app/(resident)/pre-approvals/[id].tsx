@@ -1,8 +1,7 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   View,
 } from 'react-native';
@@ -10,16 +9,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuestQrCard } from '@/components/visitors/guest-qr-card';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
+import { VisitorDetailContent } from '@/components/visitors/visitor-detail-content';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { useMyMemberships } from '@/hooks/use-society';
 import {
   useAttachQrToPreApproval,
   useVisitorRequest,
 } from '@/hooks/use-visitors';
+import { capitalizeVisitorValue } from '@/lib/visitor-status';
 import { useThemeColors } from '@/lib/theme-colors';
 import { remainingScans } from '@/lib/visitor-qr';
-import { useState } from 'react';
 
 export default function ResidentPreApprovalDetailScreen() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function ResidentPreApprovalDetailScreen() {
 
   const preview = visitorQuery.data;
   const societyId = membership?.society_id;
+  const scansLeft = preview ? remainingScans(preview) : 0;
 
   const generateQr = async () => {
     if (!preview) return;
@@ -79,10 +81,11 @@ export default function ResidentPreApprovalDetailScreen() {
     (membership.flat_id && preview.flat_id !== membership.flat_id)
   ) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <Text variant="title" className="text-role-resident">
-          Pre-approval
-        </Text>
+      <View
+        className="flex-1 bg-background px-6 justify-center"
+        style={{ paddingTop: insets.top + 16 }}
+      >
+        <VisitorFlowHeader role="resident" title="Pre-approval" showBack />
         <Text variant="body" tone="muted" className="mt-2">
           {visitorQuery.isError
             ? visitorQuery.error instanceof Error
@@ -90,12 +93,6 @@ export default function ResidentPreApprovalDetailScreen() {
               : 'Could not load this pre-approval'
             : 'Pre-approval not found for your flat.'}
         </Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
       </View>
     );
   }
@@ -109,36 +106,32 @@ export default function ResidentPreApprovalDetailScreen() {
         paddingHorizontal: 20,
       }}
     >
-      <Pressable
-        onPress={() => router.back()}
-        className="mb-3 flex-row items-center gap-1 self-start"
-        hitSlop={8}
-      >
-        <Icon
-          family="ionic"
-          name="chevron-back"
-          size={20}
-          color={colors.primary}
-        />
-        <Text variant="label" tone="primary">
-          Back
-        </Text>
-      </Pressable>
+      <VisitorFlowHeader
+        role="resident"
+        title="Pre-approval"
+        subtitle={`${capitalizeVisitorValue(preview.visitor_type)} pass for ${preview.visitor_name}`}
+        showBack
+        backLabel="Back"
+      />
 
-      <Text variant="title" className="text-role-resident">
-        Pre-approval ready
-      </Text>
-      <Text variant="body" tone="muted" className="mt-1">
-        {preview.visitor_name} · {preview.visitor_type}
-        {preview.max_scans > 1
-          ? ` · ${preview.scan_count}/${preview.max_scans} used`
-          : ''}
-      </Text>
-      {remainingScans(preview) === 0 ? (
-        <Text variant="caption" tone="danger" className="mt-1">
-          Pass exhausted
-        </Text>
-      ) : null}
+      <View className="mt-2 flex-row flex-wrap gap-2">
+        {scansLeft === 0 ? (
+          <Badge tone="danger" label="Used up" />
+        ) : (
+          <Badge tone="success" label="Active" />
+        )}
+        {preview.max_scans > 1 ? (
+          <Badge
+            tone={scansLeft === 0 ? 'muted' : 'success'}
+            label={`${preview.scan_count}/${preview.max_scans} entries`}
+          />
+        ) : null}
+        {preview.qr_token ? <Badge tone="pending" label="QR ready" /> : null}
+      </View>
+
+      <View className="mt-4">
+        <VisitorDetailContent visitor={preview} variant="compact" />
+      </View>
 
       {preview.qr_token ? (
         <View className="mt-6">
@@ -146,12 +139,13 @@ export default function ResidentPreApprovalDetailScreen() {
         </View>
       ) : (
         <View className="mt-6 rounded-2xl border border-border bg-card px-4 py-4">
-          <Text variant="body">
-            Saved for the gate. Guard can admit from the pre-approved list using
+          <Text variant="label">No QR yet</Text>
+          <Text variant="body" tone="muted" className="mt-2">
+            Saved for the gate — guard can admit from the pre-approved list using
             name{preview.photo_url ? ' and photo' : ''}.
           </Text>
           <Text variant="caption" tone="muted" className="mt-2">
-            Recommended: generate a QR when sharing with a known person.
+            Generate a QR when sharing with a known guest.
           </Text>
           <Button
             className="mt-4"
@@ -172,8 +166,9 @@ export default function ResidentPreApprovalDetailScreen() {
 
       <Button
         className="mt-6"
-        label="My pre-approvals"
+        label="All pre-approvals"
         fullWidth
+        variant="outline"
         onPress={() =>
           router.replace(
             (societyId

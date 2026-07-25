@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +15,19 @@ import { Icon } from '@/components/ui/icon';
 import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
+import { VisitorFilterChips } from '@/components/visitors/visitor-filter-chips';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import {
   useCreateStaffMember,
   useStaffCategories,
   useStaffDirectory,
 } from '@/hooks/use-staff';
+import {
+  buildStaffCategoryFilters,
+  filterStaffByCategory,
+  filterStaffByQuery,
+  type StaffCategoryFilter,
+} from '@/lib/staff-filters';
 import { useThemeColors } from '@/lib/theme-colors';
 
 type RoleAccent = 'admin' | 'resident' | 'guard';
@@ -29,12 +36,30 @@ type StaffDirectoryScreenProps = {
   role: RoleAccent;
   societyId: string;
   membershipId: string;
-  /** When set, list/create scoped to this flat (resident). */
   flatId?: string | null;
   canCreate?: boolean;
-  titleClassName: string;
+  showBack?: boolean;
   detailHref: (staffId: string) => Href;
 };
+
+function roleChipClasses(role: RoleAccent) {
+  if (role === 'admin') {
+    return {
+      activeContainerClassName: 'border-role-admin bg-role-admin/15',
+      activeLabelClassName: 'text-role-admin',
+    };
+  }
+  if (role === 'guard') {
+    return {
+      activeContainerClassName: 'border-role-guard bg-role-guard/15',
+      activeLabelClassName: 'text-role-guard',
+    };
+  }
+  return {
+    activeContainerClassName: 'border-role-resident bg-role-resident/15',
+    activeLabelClassName: 'text-role-resident',
+  };
+}
 
 export function StaffDirectoryScreen({
   role,
@@ -42,12 +67,13 @@ export function StaffDirectoryScreen({
   membershipId,
   flatId,
   canCreate = true,
-  titleClassName,
+  showBack = true,
   detailHref,
 }: StaffDirectoryScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const chipClasses = roleChipClasses(role);
 
   const categories = useStaffCategories(societyId, {
     seedIfMissing: role === 'admin',
@@ -60,6 +86,7 @@ export function StaffDirectoryScreen({
   const createStaff = useCreateStaffMember();
 
   const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<StaffCategoryFilter>('all');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -75,17 +102,16 @@ export function StaffDirectoryScreen({
     [categories.data],
   );
 
+  const categoryFilters = useMemo(
+    () => buildStaffCategoryFilters(directory.data ?? []),
+    [directory.data],
+  );
+
   const filtered = useMemo(() => {
     const rows = directory.data ?? [];
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.phone ?? '').toLowerCase().includes(q) ||
-        (s.category_name ?? '').toLowerCase().includes(q),
-    );
-  }, [directory.data, query]);
+    const byCategory = filterStaffByCategory(rows, categoryFilter);
+    return filterStaffByQuery(byCategory, query);
+  }, [categoryFilter, directory.data, query]);
 
   const accent =
     role === 'admin'
@@ -93,6 +119,13 @@ export function StaffDirectoryScreen({
       : role === 'guard'
         ? colors.roleGuard
         : colors.roleResident;
+
+  const subtitle =
+    role === 'guard'
+      ? 'Verify recurring passes at the gate'
+      : role === 'admin'
+        ? 'Society-wide service staff'
+        : 'Service staff for your flat';
 
   const submit = async () => {
     const trimmed = name.trim();
@@ -122,68 +155,78 @@ export function StaffDirectoryScreen({
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-1 px-5 pt-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+    <View className="flex-1 bg-background">
+      <View
+        className="flex-1 px-5"
+        style={{ paddingTop: insets.top + 16 }}
+      >
+        <VisitorFlowHeader
+          role={role}
+          title="Staff"
+          subtitle={subtitle}
+          caption={
+            filtered.length > 0
+              ? `${filtered.length} member${filtered.length === 1 ? '' : 's'}`
+              : undefined
+          }
+          showBack={showBack}
+          rightSlot={
+            canCreate ? (
+              <Button
+                label="Add"
+                size="sm"
+                variant="accent"
+                onPress={() => setSheetOpen(true)}
+              />
+            ) : undefined
+          }
+        />
 
-        <View className="mb-4 flex-row items-start justify-between gap-3">
-          <View className="flex-1">
-            <Text variant="title" className={titleClassName}>
-              Staff directory
-            </Text>
-            <Text variant="body" tone="muted" className="mt-1">
-              {role === 'guard'
-                ? 'Verify recurring passes at the gate'
-                : role === 'admin'
-                  ? 'Society-wide service staff with recurring gate passes'
-                  : 'Your flat’s service staff with recurring gate passes'}
-            </Text>
-          </View>
-          {canCreate ? (
-            <Button
-              label="Add"
-              size="sm"
-              variant="accent"
-              onPress={() => setSheetOpen(true)}
-            />
-          ) : null}
+        <View className="mt-4 rounded-2xl border border-border bg-card px-4 py-3">
+          <TextInput
+            label="Search"
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Name, phone, or category"
+            autoCapitalize="none"
+          />
         </View>
 
-        <TextInput
-          label="Search"
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Name, phone, or category"
-          autoCapitalize="none"
-        />
+        {categoryFilters.length > 1 ? (
+          <View className="mt-3">
+            <VisitorFilterChips
+              filters={categoryFilters}
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              {...chipClasses}
+            />
+          </View>
+        ) : null}
 
         {directory.isLoading || categories.isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={accent} />
           </View>
         ) : directory.isError ? (
-          <View className="mt-8">
-            <Text variant="caption" tone="danger">
+          <View className="mt-8 items-center px-4">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-danger/10">
+              <Icon
+                family="ionic"
+                name="alert-circle-outline"
+                size={28}
+                color={colors.danger}
+              />
+            </View>
+            <Text variant="label" className="text-center">
+              Could not load staff
+            </Text>
+            <Text variant="body" tone="muted" className="mt-1 text-center">
               {directory.error instanceof Error
                 ? directory.error.message
-                : 'Could not load staff'}
+                : 'Please try again.'}
             </Text>
             <Button
-              className="mt-3"
+              className="mt-4"
               label="Retry"
               variant="outline"
               onPress={() => void directory.refetch()}
@@ -196,19 +239,41 @@ export function StaffDirectoryScreen({
             keyExtractor={(item) => item.id}
             refreshing={directory.isRefetching}
             onRefresh={() => void directory.refetch()}
-            contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
             ListEmptyComponent={
-              <View className="items-center py-16">
-                <Text variant="body" tone="muted" className="text-center">
-                  {query
+              <View className="items-center py-16 px-4">
+                <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                  <Icon
+                    family="ionic"
+                    name="construct-outline"
+                    size={28}
+                    color={colors.muted}
+                  />
+                </View>
+                <Text variant="label" className="text-center">
+                  {query || categoryFilter !== 'all'
                     ? 'No matches'
-                    : 'No staff yet. Add a recurring service person.'}
+                    : 'No staff yet'}
                 </Text>
+                <Text variant="body" tone="muted" className="mt-1 text-center">
+                  {query || categoryFilter !== 'all'
+                    ? 'Try another search or category filter.'
+                    : 'Add recurring service people with gate passes.'}
+                </Text>
+                {canCreate && !query && categoryFilter === 'all' ? (
+                  <Button
+                    className="mt-5"
+                    label="Add staff"
+                    variant="accent"
+                    onPress={() => setSheetOpen(true)}
+                  />
+                ) : null}
               </View>
             }
             renderItem={({ item }) => (
               <StaffMemberCard
                 staff={item}
+                hideScope={role === 'resident'}
                 onPress={() => router.push(detailHref(item.id))}
               />
             )}
@@ -240,46 +305,48 @@ export function StaffDirectoryScreen({
         }
       >
         <KeyboardAvoidingView behavior="padding">
-          <TextInput
-            label="Name"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            placeholder="e.g. Ramesh"
-          />
-          <TextInput
-            className="mt-3"
-            label="Phone"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            placeholder="Optional"
-          />
-          {categories.isError ? (
-            <Text variant="caption" tone="danger" className="mt-3">
-              {categories.error instanceof Error
-                ? categories.error.message
-                : 'Could not load categories'}
-            </Text>
-          ) : categoryOptions.length > 0 ? (
-            <View className="mt-3">
-              <SelectField
-                label="Category"
-                value={categoryId}
-                onChange={setCategoryId}
-                options={categoryOptions}
-              />
-            </View>
-          ) : role === 'admin' ? (
-            <Text variant="caption" tone="muted" className="mt-3">
-              Default categories will appear after the first save.
-            </Text>
-          ) : (
-            <Text variant="caption" tone="muted" className="mt-3">
-              No categories yet. Ask an admin to open Staff once, or save
-              without a category.
-            </Text>
-          )}
+          <View className="rounded-2xl border border-border bg-neutral-50 px-4 py-4 dark:bg-neutral-900">
+            <TextInput
+              label="Full name"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              placeholder="e.g. Ramesh"
+            />
+            <TextInput
+              className="mt-4"
+              label="Phone (optional)"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder="Contact number"
+            />
+            {categories.isError ? (
+              <Text variant="caption" tone="danger" className="mt-3">
+                {categories.error instanceof Error
+                  ? categories.error.message
+                  : 'Could not load categories'}
+              </Text>
+            ) : categoryOptions.length > 0 ? (
+              <View className="mt-4">
+                <SelectField
+                  label="Category"
+                  value={categoryId}
+                  onChange={setCategoryId}
+                  options={categoryOptions}
+                />
+              </View>
+            ) : role === 'admin' ? (
+              <Text variant="caption" tone="muted" className="mt-3">
+                Default categories appear after the first save.
+              </Text>
+            ) : (
+              <Text variant="caption" tone="muted" className="mt-3">
+                No categories yet. Ask an admin to open Staff once, or save
+                without a category.
+              </Text>
+            )}
+          </View>
           {formError ? (
             <Text variant="caption" tone="danger" className="mt-3">
               {formError}

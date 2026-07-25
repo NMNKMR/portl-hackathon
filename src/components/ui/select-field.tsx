@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { AppBottomSheet } from '@/components/ui/bottom-sheet';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useThemeColors } from '@/lib/theme-colors';
@@ -31,7 +31,6 @@ export function SelectField({
   onChange,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
-  const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const selected = options.find((o) => o.value === value);
 
@@ -65,51 +64,38 @@ export function SelectField({
         />
       </Pressable>
 
-      <Modal
+      <AppBottomSheet
         visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
+        onClose={() => setOpen(false)}
+        title={label}
+        snapPoints={['42%', '65%']}
       >
-        <Pressable
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setOpen(false)}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{ maxHeight: 320 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Pressable
-            className="rounded-t-3xl bg-background px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 16) }}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View className="mb-3 items-center">
-              <View className="h-1 w-10 rounded-full bg-border" />
-            </View>
-            <Text variant="label" className="mb-3">
-              {label}
-            </Text>
-            <ScrollView style={{ maxHeight: 320 }}>
-              {options.map((option) => {
-                const isSelected = option.value === value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    className={`mb-2 rounded-xl border px-4 py-3 ${
-                      isSelected
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border bg-card'
-                    }`}
-                    onPress={() => {
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                  >
-                    <Text variant="label">{option.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <Pressable
+                key={option.value}
+                className={`mb-2 rounded-xl border px-4 py-3 ${
+                  isSelected
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card'
+                }`}
+                onPress={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                <Text variant="label">{option.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </AppBottomSheet>
     </View>
   );
 }

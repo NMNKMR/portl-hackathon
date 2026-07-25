@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Pressable,
   ScrollView,
   View,
 } from 'react-native';
@@ -11,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
@@ -201,11 +201,7 @@ export default function JoinSocietyScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         >
-          <Pressable onPress={() => router.back()} className="mb-4 self-start">
-            <Text variant="label" tone="primary">
-              Back
-            </Text>
-          </Pressable>
+          <ScreenBackButton className="mb-4" />
 
           <Text variant="title">Join society</Text>
           <Text variant="body" tone="muted" className="mt-2">

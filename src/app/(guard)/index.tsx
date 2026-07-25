@@ -1,7 +1,11 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
+import {
+  NeedsAttentionFeed,
+  type AttentionItem,
+} from '@/components/needs-attention-feed';
 import {
   RoleDashboardShell,
   type DashboardQuickAction,
@@ -12,11 +16,9 @@ import { Text } from '@/components/ui/text';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useSocietyVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
+import { visitorFlatLabel } from '@/lib/api/visitors';
 import { useThemeColors } from '@/lib/theme-colors';
-
-function comingSoon(label: string) {
-  Alert.alert('Coming next', `${label} will land with the next feature slice.`);
-}
+import { remainingScans } from '@/lib/visitor-qr';
 
 function startOfTodayIso(): string {
   const d = new Date();
@@ -88,10 +90,73 @@ export default function GuardHomeScreen() {
     return '/(guard)/visitors?filter=inside' as Href;
   }, [societyId]);
 
+  const attentionItems = useMemo((): AttentionItem[] => {
+    const rows = visitorsQuery.data ?? [];
+    const items: AttentionItem[] = [];
+
+    for (const v of rows) {
+      if (v.status === 'approved') {
+        items.push({
+          id: `admit-${v.id}`,
+          title: `Ready to check in · ${v.visitor_name.trim() || 'Visitor'}`,
+          subtitle: visitorFlatLabel(v) || undefined,
+          timestampIso: v.approved_at ?? v.requested_at,
+          badgeLabel: 'Approved',
+          badgeTone: 'success',
+          icon: 'people',
+          sortAt: new Date(v.approved_at ?? v.requested_at).getTime() + 20_000,
+          onPress: () => router.push(`/(guard)/visitors/${v.id}` as Href),
+        });
+        continue;
+      }
+
+      if (v.status === 'pending') {
+        items.push({
+          id: `waiting-${v.id}`,
+          title: `Awaiting resident · ${v.visitor_name.trim() || 'Visitor'}`,
+          subtitle: visitorFlatLabel(v) || undefined,
+          timestampIso: v.requested_at,
+          badgeLabel: 'Pending',
+          badgeTone: 'pending',
+          icon: 'time',
+          sortAt: new Date(v.requested_at).getTime() + 5_000,
+          onPress: () => router.push(`/(guard)/visitors/${v.id}` as Href),
+        });
+        continue;
+      }
+
+      if (
+        v.initiated_by === 'resident' &&
+        remainingScans(v) > 0 &&
+        v.status !== 'checked_out' &&
+        v.status !== 'rejected'
+      ) {
+        items.push({
+          id: `pre-${v.id}`,
+          title: `Pre-approved · ${v.visitor_name.trim() || 'Visitor'}`,
+          subtitle: visitorFlatLabel(v) || undefined,
+          timestampIso: v.requested_at,
+          badgeLabel: 'Pre-approved',
+          badgeTone: 'muted',
+          icon: 'qr',
+          sortAt: new Date(v.requested_at).getTime(),
+          onPress: () =>
+            router.push(
+              v.qr_token
+                ? (`/(guard)/visitors/scan?societyId=${encodeURIComponent(v.society_id)}` as Href)
+                : (`/(guard)/visitors/${v.id}` as Href),
+            ),
+        });
+      }
+    }
+
+    return items;
+  }, [visitorsQuery.data, router]);
+
   const quickActions: DashboardQuickAction[] = [
     {
       id: 'qr',
-      label: 'Scan QR',
+      labelLines: ['Scan', 'QR'],
       icon: 'qr',
       onPress: () => {
         if (!societyId) return;
@@ -102,7 +167,7 @@ export default function GuardHomeScreen() {
     },
     {
       id: 'log',
-      label: 'Visitor log',
+      labelLines: ['Visitor', 'Log'],
       icon: 'people',
       onPress: () => router.push(visitorsHref),
     },
@@ -113,6 +178,7 @@ export default function GuardHomeScreen() {
       id: 'staff',
       label: 'Staff passes',
       value: 'Verify',
+      linkLabel: 'Verify now',
       icon: 'shield',
       onPress: () => {
         if (!societyId) return;
@@ -125,6 +191,7 @@ export default function GuardHomeScreen() {
       id: 'visitors-today',
       label: "Today's entries",
       value: String(todaysEntries),
+      linkLabel: 'View log',
       icon: 'people',
       onPress: () => router.push(visitorsHref),
     },
@@ -132,6 +199,7 @@ export default function GuardHomeScreen() {
       id: 'inside',
       label: 'Currently inside',
       value: String(currentlyInside),
+      linkLabel: 'View now',
       icon: 'time',
       onPress: () => router.push(insideHref),
     },
@@ -168,6 +236,7 @@ export default function GuardHomeScreen() {
     <RoleDashboardShell
       role="guard"
       userName={profile?.full_name}
+      avatarUrl={profile?.avatar_url}
       subtitle={societyName}
       quickActions={quickActions}
       summaryCards={summaryCards}
@@ -175,6 +244,11 @@ export default function GuardHomeScreen() {
         label: 'Register visitor',
         onPress: () => router.push(registerHref),
       }}
-    />
+    >
+      <NeedsAttentionFeed
+        items={attentionItems}
+        onViewAll={() => router.push(visitorsHref)}
+      />
+    </RoleDashboardShell>
   );
 }

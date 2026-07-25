@@ -6,11 +6,5 @@ export default function AdminStaffDetail() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
 
-  return (
-    <StaffDetailScreen
-      staffId={id}
-      titleClassName="text-role-admin"
-      mode="manage"
-    />
-  );
+  return <StaffDetailScreen staffId={id} role="admin" mode="manage" />;
 }

@@ -51,7 +51,7 @@ export default function AdminStaffIndex() {
       role="admin"
       societyId={membership.society_id}
       membershipId={membership.id}
-      titleClassName="text-role-admin"
+      showBack
       detailHref={(id) =>
         `/(admin)/staff/${id}?societyId=${encodeURIComponent(membership.society_id)}` as Href
       }

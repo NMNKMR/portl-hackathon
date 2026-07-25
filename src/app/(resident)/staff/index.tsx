@@ -52,7 +52,7 @@ export default function ResidentStaffIndex() {
       societyId={membership.society_id}
       membershipId={membership.id}
       flatId={membership.flat_id}
-      titleClassName="text-role-resident"
+      showBack
       detailHref={(id) =>
         `/(resident)/staff/${id}?societyId=${encodeURIComponent(membership.society_id)}` as Href
       }

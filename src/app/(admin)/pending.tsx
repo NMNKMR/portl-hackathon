@@ -12,6 +12,7 @@ import { AdminScreenHeader } from '@/components/admin/admin-screen-header';
 import { PendingJoinCard } from '@/components/admin/pending-join-card';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import {
   useBatchUpdateMembershipStatus,
@@ -98,12 +99,7 @@ export default function AdminPendingScreen() {
     return (
       <View className="flex-1 bg-background px-6 justify-center">
         <Text variant="title">No society</Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }

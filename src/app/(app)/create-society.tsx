@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { ScreenBackButton } from "@/components/ui/screen-back-button";
 import { Text } from "@/components/ui/text";
 import { TextInput } from "@/components/ui/text-input";
 import { useCreateSociety } from "@/hooks/use-society";
@@ -78,14 +79,7 @@ export default function CreateSocietyScreen() {
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         >
           {!created ? (
-            <Pressable
-              onPress={() => router.back()}
-              className="mb-4 self-start"
-            >
-              <Text variant="label" tone="primary">
-                Back
-              </Text>
-            </Pressable>
+            <ScreenBackButton className="mb-4" />
           ) : (
             <View className="mb-4 h-5" />
           )}

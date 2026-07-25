@@ -1,41 +1,37 @@
+import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
   hasQrPass,
   visitorFlatLabel,
   type VisitorRequest,
 } from '@/lib/api/visitors';
-import { formatJoinDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { formatVisitorListTimestamp } from '@/lib/format';
 import { remainingScans } from '@/lib/visitor-qr';
-import type { VisitorStatus } from '@/types/database';
+import {
+  capitalizeVisitorValue,
+  visitorStatusBadgeTone,
+  visitorStatusLabel,
+} from '@/lib/visitor-status';
+import { useThemeColors } from '@/lib/theme-colors';
 
-type BadgeTone = 'pending' | 'success' | 'danger' | 'muted';
-
-const STATUS_BADGE: Record<
-  VisitorStatus,
-  { tone: BadgeTone; label: string }
-> = {
-  pending: { tone: 'pending', label: 'Pending' },
-  approved: { tone: 'success', label: 'Approved' },
-  rejected: { tone: 'danger', label: 'Rejected' },
-  checked_in: { tone: 'success', label: 'Checked in' },
-  checked_out: { tone: 'muted', label: 'Checked out' },
-};
-
-function formatVisitorType(type: string): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
+const TAG_CLASS = 'px-1.5 py-0';
+const TAG_LABEL_CLASS = 'text-[10px] leading-3';
 
 export type VisitorRequestCardProps = {
   visitor: VisitorRequest;
   onPress?: () => void;
-  /** Optional trailing actions (approve, check-in, etc.) */
   trailing?: ReactNode;
   className?: string;
+  showChevron?: boolean;
+  hideStatus?: boolean;
+  /** Resident flat-scoped lists — flat is implicit */
+  hideFlat?: boolean;
 };
 
 export function VisitorRequestCard({
@@ -43,46 +39,110 @@ export function VisitorRequestCard({
   onPress,
   trailing,
   className,
+  showChevron = true,
+  hideStatus = false,
+  hideFlat = false,
 }: VisitorRequestCardProps) {
-  const status = STATUS_BADGE[visitor.status];
-  const requestedAt = formatJoinDate(visitor.requested_at);
+  const colors = useThemeColors();
+  const statusTone = visitorStatusBadgeTone(visitor.status);
+  const statusLabel = visitorStatusLabel(visitor.status);
+  const timestamp = formatVisitorListTimestamp(visitor.requested_at);
   const flatLabel = visitorFlatLabel(visitor);
+  const typeLabel = capitalizeVisitorValue(visitor.visitor_type);
+  const name = visitor.visitor_name.trim() || 'Visitor';
+  const scansLeft = remainingScans(visitor);
+  const showEntries =
+    visitor.initiated_by === 'resident' && visitor.max_scans > 1;
 
   const body = (
-    <View className={cn('mb-3 rounded-xl border border-border bg-card px-4 py-3', className)}>
-      <View className="flex-row items-start gap-3">
-        <View className="flex-1">
-          <View className="flex-row items-start justify-between gap-2">
-            <View className="flex-1">
-              <Text variant="label">{visitor.visitor_name.trim() || 'Visitor'}</Text>
-              <Text variant="caption" tone="muted" className="mt-0.5">
-                {formatVisitorType(visitor.visitor_type)} · {flatLabel}
-              </Text>
-            </View>
-            <View className="items-end gap-1">
-              <Badge tone={status.tone} label={status.label} />
-              {hasQrPass(visitor) ? (
-                <Badge tone="pending" label="QR available" />
-              ) : null}
-            </View>
+    <View
+      className={cn(
+        'mb-3 flex-row items-start gap-3 rounded-2xl border border-border bg-card p-3',
+        className,
+      )}
+    >
+      {visitor.photo_url ? (
+        <Image
+          source={{ uri: visitor.photo_url }}
+          style={{ width: 52, height: 52, borderRadius: 16 }}
+          contentFit="cover"
+          accessibilityLabel={`${name} photo`}
+        />
+      ) : (
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-2xl bg-primary/10">
+          <Icon family="ionic" name="person-outline" size={24} color={colors.primary} />
+        </View>
+      )}
+
+      <View className="relative min-h-[52px] min-w-0 flex-1">
+        <View className="flex-row items-start gap-2 pr-7">
+          <View className="min-w-0 flex-1">
+            <Text variant="label" numberOfLines={2}>
+              {name}
+            </Text>
+            <Text variant="caption" tone="muted" className="mt-0.5" numberOfLines={1}>
+              {typeLabel}
+            </Text>
           </View>
-
-          {visitor.initiated_by === 'resident' && visitor.max_scans > 1 ? (
-            <Text variant="caption" tone="muted" className="mt-2">
-              Entries {visitor.scan_count}/{visitor.max_scans}
-              {remainingScans(visitor) === 0 ? ' · exhausted' : ''}
-            </Text>
-          ) : null}
-
-          {requestedAt ? (
-            <Text variant="caption" tone="muted" className="mt-2">
-              {visitor.initiated_by === 'resident' ? 'Pre-approved' : 'Requested'}{' '}
-              {requestedAt}
-            </Text>
-          ) : null}
+          <View className="max-w-[46%] shrink-0 flex-row flex-wrap justify-end gap-1">
+            {!hideStatus ? (
+              <Badge
+                tone={statusTone}
+                label={statusLabel}
+                className={TAG_CLASS}
+                labelClassName={TAG_LABEL_CLASS}
+              />
+            ) : null}
+            {!hideFlat ? (
+              <Badge
+                tone="muted"
+                label={flatLabel}
+                className={TAG_CLASS}
+                labelClassName={TAG_LABEL_CLASS}
+              />
+            ) : null}
+            {hasQrPass(visitor) ? (
+              <Badge
+                tone="pending"
+                label="QR"
+                className={TAG_CLASS}
+                labelClassName={TAG_LABEL_CLASS}
+              />
+            ) : null}
+            {showEntries ? (
+              <Badge
+                tone={scansLeft === 0 ? 'muted' : 'success'}
+                label={`${visitor.scan_count}/${visitor.max_scans}`}
+                className={TAG_CLASS}
+                labelClassName={TAG_LABEL_CLASS}
+              />
+            ) : null}
+          </View>
         </View>
 
-        {trailing ? <View className="pt-0.5">{trailing}</View> : null}
+        {timestamp ? (
+          <Text
+            variant="caption"
+            tone="muted"
+            className="mt-2 text-[11px] leading-4 opacity-80"
+          >
+            {visitor.initiated_by === 'resident' ? 'Pre-approved' : 'Requested'}{' '}
+            · {timestamp}
+          </Text>
+        ) : null}
+
+        {trailing ? (
+          <View className="absolute bottom-0 right-0">{trailing}</View>
+        ) : onPress && showChevron ? (
+          <View className="absolute bottom-0 right-0">
+            <Icon
+              family="ionic"
+              name="arrow-forward"
+              size={20}
+              color={colors.muted}
+            />
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -90,7 +150,7 @@ export function VisitorRequestCard({
   if (!onPress) return body;
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button">
+    <Pressable onPress={onPress} accessibilityRole="button" className="active:opacity-90">
       {body}
     </Pressable>
   );

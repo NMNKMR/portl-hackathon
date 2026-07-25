@@ -14,6 +14,7 @@ import { CreateBlockSheet } from '@/components/admin/create-block-sheet';
 import { Button } from '@/components/ui/button';
 import { EmptyIllustration } from '@/components/ui/empty-illustration';
 import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import { useAdminSocietyId } from '@/hooks/use-admin-society-id';
@@ -126,12 +127,7 @@ export default function BlocksIndexScreen() {
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         <Text variant="title">No society</Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }

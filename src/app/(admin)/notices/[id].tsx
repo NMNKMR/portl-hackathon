@@ -1,18 +1,16 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdminScreenHeader } from '@/components/admin/admin-screen-header';
 import { NoticeDetailBody } from '@/components/notices/notice-detail-body';
-import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useNotice } from '@/hooks/use-notices';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function AdminNoticeDetailScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const params = useLocalSearchParams<{ id?: string; societyId?: string }>();
@@ -64,8 +62,11 @@ export default function AdminNoticeDetailScreen() {
         className="flex-1 bg-background px-6"
         style={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }}
       >
-        <AdminScreenHeader title="Notice not found" subtitle="This notice may have been removed." />
-        <Button label="Back to notices" fullWidth onPress={() => router.back()} />
+        <AdminScreenHeader
+          title="Notice not found"
+          subtitle="This notice may have been removed."
+          backLabel="Back to notices"
+        />
       </View>
     );
   }

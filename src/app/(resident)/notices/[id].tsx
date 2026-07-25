@@ -1,11 +1,10 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NoticeDetailBody } from '@/components/notices/notice-detail-body';
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import { useActiveNotices, useMarkNoticeRead, useNotice } from '@/hooks/use-notices';
 import { useMyMemberships } from '@/hooks/use-society';
@@ -90,10 +89,9 @@ export default function ResidentNoticeDetailScreen() {
         <Text variant="body" tone="muted" className="mt-2">
           This notice may have expired or been removed.
         </Text>
-        <Button
+        <ScreenBackButton
           className="mt-6"
           label="Back to notices"
-          fullWidth
           onPress={() => {
             const href = membership.society_id
               ? (`/(resident)/notices?societyId=${encodeURIComponent(membership.society_id)}` as Href)
@@ -111,21 +109,7 @@ export default function ResidentNoticeDetailScreen() {
       style={{ paddingTop: insets.top + 8 }}
     >
       <View className="px-6">
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-4 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+        <ScreenBackButton className="mb-4" />
       </View>
 
       <NoticeDetailBody

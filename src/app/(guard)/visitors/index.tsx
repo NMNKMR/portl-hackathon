@@ -3,15 +3,16 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { VisitorDateFilterChips } from '@/components/visitors/visitor-date-filter-chips';
+import { VisitorFilterChips } from '@/components/visitors/visitor-filter-chips';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { VisitorRequestCard } from '@/components/visitors/visitor-request-card';
 import { useMyMemberships } from '@/hooks/use-society';
 import {
@@ -19,6 +20,10 @@ import {
   useVisitorRealtime,
 } from '@/hooks/use-visitors';
 import { type VisitorRequest } from '@/lib/api/visitors';
+import {
+  filterVisitorsByDate,
+  type VisitorDateRange,
+} from '@/lib/visitor-filters';
 import { useThemeColors } from '@/lib/theme-colors';
 
 type FilterId = 'all' | 'pending' | 'approved' | 'preapproved' | 'inside';
@@ -89,11 +94,13 @@ export default function GuardVisitorsListScreen() {
       typeof params.filter === 'string' ? params.filter : undefined,
     ),
   );
+  const [dateRange, setDateRange] = useState<VisitorDateRange>('week');
 
   const filtered = useMemo(() => {
     const rows = visitorsQuery.data ?? [];
-    return rows.filter((v) => matchesFilter(v, filter));
-  }, [visitorsQuery.data, filter]);
+    const byStatus = rows.filter((v) => matchesFilter(v, filter));
+    return filterVisitorsByDate(byStatus, dateRange);
+  }, [visitorsQuery.data, filter, dateRange]);
 
   const registerHref = useMemo(() => {
     if (societyId) {
@@ -132,64 +139,51 @@ export default function GuardVisitorsListScreen() {
   const societyName = membership.societies?.name ?? 'Your society';
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <View className="flex-1 px-5 pt-3">
-        <View className="mb-4 flex-row items-start justify-between gap-3">
-          <View className="flex-1">
-            <Text variant="title" className="text-role-guard">
-              Visitor log
-            </Text>
-            <Text variant="body" tone="muted" className="mt-1">
-              {societyName}
-            </Text>
-          </View>
-          <View className="flex-row gap-2">
-            <Button
-              label="Scan"
-              size="sm"
-              variant="outline"
-              icon={{ family: 'ionic', name: 'qr-code-outline' }}
-              onPress={() =>
-                router.push(
-                  societyId
-                    ? (`/(guard)/visitors/scan?societyId=${encodeURIComponent(societyId)}` as Href)
-                    : ('/(guard)/visitors/scan' as Href),
-                )
-              }
-            />
-            <Button
-              label="Register"
-              size="sm"
-              variant="accent"
-              icon={{ family: 'ionic', name: 'add-circle-outline' }}
-              onPress={() => router.push(registerHref)}
-            />
-          </View>
-        </View>
+    <View className="flex-1 bg-background">
+      <View
+        className="flex-1 px-5"
+        style={{ paddingTop: insets.top + 16 }}
+      >
+        <VisitorFlowHeader
+          role="guard"
+          title="Visitor log"
+          subtitle={societyName}
+          rightSlot={
+            <View className="flex-row gap-2">
+              <Button
+                label="Scan"
+                size="sm"
+                variant="outline"
+                icon={{ family: 'ionic', name: 'qr-code-outline' }}
+                onPress={() =>
+                  router.push(
+                    `/(guard)/visitors/scan?societyId=${encodeURIComponent(societyId)}` as Href,
+                  )
+                }
+              />
+              <Button
+                label="Register"
+                size="sm"
+                variant="accent"
+                icon={{ family: 'ionic', name: 'add-circle-outline' }}
+                onPress={() => router.push(registerHref)}
+              />
+            </View>
+          }
+        />
 
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {FILTERS.map((chip) => {
-            const active = filter === chip.id;
-            return (
-              <Pressable
-                key={chip.id}
-                onPress={() => setFilter(chip.id)}
-                className={`rounded-full border px-3 py-1.5 ${
-                  active
-                    ? 'border-role-guard bg-role-guard/15'
-                    : 'border-border bg-card'
-                }`}
-              >
-                <Text
-                  variant="caption"
-                  className={active ? 'text-role-guard' : undefined}
-                  tone={active ? undefined : 'muted'}
-                >
-                  {chip.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View className="mt-5 gap-3">
+          <VisitorFilterChips
+            filters={FILTERS}
+            value={filter}
+            onChange={setFilter}
+          />
+          <VisitorDateFilterChips
+            value={dateRange}
+            onChange={setDateRange}
+            activeContainerClassName="border-role-guard bg-role-guard/15"
+            activeLabelClassName="text-role-guard"
+          />
         </View>
 
         {visitorsQuery.isLoading ? (
@@ -198,16 +192,21 @@ export default function GuardVisitorsListScreen() {
           </View>
         ) : visitorsQuery.isError ? (
           <View className="flex-1 items-center justify-center px-4">
-            <Icon
-              family="ionic"
-              name="alert-circle-outline"
-              size={40}
-              color={colors.danger}
-            />
-            <Text variant="body" tone="muted" className="mt-3 text-center">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-danger/10">
+              <Icon
+                family="ionic"
+                name="alert-circle-outline"
+                size={28}
+                color={colors.danger}
+              />
+            </View>
+            <Text variant="label" className="text-center">
+              Could not load log
+            </Text>
+            <Text variant="body" tone="muted" className="mt-1 text-center">
               {visitorsQuery.error instanceof Error
                 ? visitorsQuery.error.message
-                : 'Could not load visitors'}
+                : 'Please try again.'}
             </Text>
             <Button
               className="mt-4"
@@ -218,27 +217,30 @@ export default function GuardVisitorsListScreen() {
           </View>
         ) : (
           <FlatList
+            className="mt-4"
             data={filtered}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
             refreshing={visitorsQuery.isRefetching}
             onRefresh={() => void visitorsQuery.refetch()}
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center px-6 py-16">
-                <Icon
-                  family="ionic"
-                  name="people-outline"
-                  size={44}
-                  color={colors.muted}
-                />
-                <Text variant="label" className="mt-3 text-center">
+                <View className="mb-3 h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                  <Icon
+                    family="ionic"
+                    name="people-outline"
+                    size={28}
+                    color={colors.muted}
+                  />
+                </View>
+                <Text variant="label" className="text-center">
                   {filter === 'all' ? 'No visitors yet' : 'Nothing in this filter'}
                 </Text>
                 <Text variant="body" tone="muted" className="mt-1 text-center">
-                  {filter === 'all'
-                    ? 'Register a visitor at the gate to start the log.'
-                    : 'Try another filter or register a new visitor.'}
+                  {filter === 'all' && dateRange === 'all'
+                    ? 'Register someone at the gate to start the log.'
+                    : 'Nothing matches these filters. Try another combination.'}
                 </Text>
                 {filter === 'all' ? (
                   <Button
@@ -261,12 +263,6 @@ export default function GuardVisitorsListScreen() {
           />
         )}
       </View>
-
-      <DashboardBottomNav
-        role="guard"
-        roleAccent={colors.roleGuard}
-        activeTab="visitors"
-      />
     </View>
   );
 }

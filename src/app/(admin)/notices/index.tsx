@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import { NoticeCard } from '@/components/notices/notice-card';
 import { AppBottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -189,12 +188,6 @@ export default function AdminNoticesScreen() {
           />
         )}
       </View>
-
-      <DashboardBottomNav
-        role="admin"
-        roleAccent={colors.roleAdmin}
-        activeTab="notices"
-      />
 
       <AppBottomSheet
         visible={sheetOpen}

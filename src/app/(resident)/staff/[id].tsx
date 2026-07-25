@@ -6,11 +6,5 @@ export default function ResidentStaffDetail() {
   const params = useLocalSearchParams<{ id?: string }>();
   const id = typeof params.id === 'string' ? params.id : '';
 
-  return (
-    <StaffDetailScreen
-      staffId={id}
-      titleClassName="text-role-resident"
-      mode="manage"
-    />
-  );
+  return <StaffDetailScreen staffId={id} role="resident" mode="manage" />;
 }

@@ -83,6 +83,54 @@ export function formatJoinDate(iso: string | null | undefined): string {
   });
 }
 
+/** Compact timestamp for visitor list cards — time if today, else short date */
+export function formatVisitorListTimestamp(
+  iso: string | null | undefined,
+): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday · ${date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    })}`;
+  }
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+/** Compact timestamp for dashboard attention rows — time if today, else short date */
+export function formatAttentionTimestamp(
+  iso: string | null | undefined,
+): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function displayPersonName(
   fullName: string | null | undefined,
   fallback = 'Unnamed member',

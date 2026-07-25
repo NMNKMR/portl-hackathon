@@ -7,9 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DashboardBottomNav } from '@/components/dashboard-bottom-nav';
 import { NoticeCard } from '@/components/notices/notice-card';
-import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
 import { useActiveNotices } from '@/hooks/use-notices';
 import { useMyMemberships } from '@/hooks/use-society';
@@ -102,21 +100,14 @@ export default function ResidentNoticesScreen() {
               <NoticeCard
                 notice={item}
                 showPinned={false}
+                showUnread
                 onPress={() => openDetail(item)}
-                trailingBadge={
-                  !item.read_at ? <Badge tone="pending" label="Unread" /> : null
-                }
               />
             )}
           />
         )}
       </View>
 
-      <DashboardBottomNav
-        role="resident"
-        roleAccent={colors.roleResident}
-        activeTab="notices"
-      />
     </View>
   );
 }

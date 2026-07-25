@@ -1,8 +1,11 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import { ActivityIndicator, Alert, Pressable, Share, View } from 'react-native';
+import { ActivityIndicator, Share, View } from 'react-native';
 
-import { PendingJoinCard } from '@/components/admin/pending-join-card';
+import {
+  NeedsAttentionFeed,
+  type AttentionItem,
+} from '@/components/needs-attention-feed';
 import {
   RoleDashboardShell,
   type DashboardQuickAction,
@@ -17,14 +20,12 @@ import {
   useMyMemberships,
   usePendingMemberships,
   useSociety,
-  useUpdateMembershipStatus,
+  useSocietyFlats,
 } from '@/hooks/use-society';
 import { countOpenComplaints } from '@/lib/api/complaints';
+import { displayPersonName } from '@/lib/format';
+import { pendingFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
-
-function comingSoon(label: string) {
-  Alert.alert('Coming next', `${label} will land with the next feature slice.`);
-}
 
 export default function AdminHomeScreen() {
   const router = useRouter();
@@ -48,18 +49,71 @@ export default function AdminHomeScreen() {
   const pending = usePendingMemberships(societyId);
   const complaints = useSocietyComplaints(societyId);
   const notices = useSocietyNotices(societyId);
-  const updateStatus = useUpdateMembershipStatus();
+  const flats = useSocietyFlats(societyId);
   const code = params.code ?? society.data?.code;
   const pendingRows = pending.data ?? [];
   const openComplaints = countOpenComplaints(complaints.data ?? []);
   const activeNoticeCount = (notices.data ?? []).filter((n) => n.is_active)
     .length;
+  const flatCount = flats.data?.length ?? 0;
   const societyName = society.data?.name ?? 'Your society';
+
+  const attentionItems = useMemo((): AttentionItem[] => {
+    if (!societyId) return [];
+    const items: AttentionItem[] = [];
+
+    for (const row of pendingRows) {
+      const name = displayPersonName(row.full_name, 'Member');
+      const flat = pendingFlatLabel(row);
+      items.push({
+        id: `join-${row.id}`,
+        title: `Join request · ${name}`,
+        subtitle: flat || undefined,
+        timestampIso: row.created_at,
+        badgeLabel: 'Pending',
+        badgeTone: 'pending',
+        icon: 'person',
+        sortAt: new Date(row.created_at).getTime(),
+        onPress: () =>
+          router.push({
+            pathname: '/(admin)/pending',
+            params: { societyId },
+          }),
+      });
+    }
+
+    for (const row of complaints.data ?? []) {
+      if (row.status !== 'open' && row.status !== 'in_progress') continue;
+      items.push({
+        id: `complaint-${row.id}`,
+        title: row.category
+          ? `${row.category} complaint`
+          : 'Open complaint',
+        subtitle: row.flat_number
+          ? row.block_name
+            ? `${row.block_name} · ${row.flat_number}`
+            : row.flat_number
+          : undefined,
+        timestampIso: row.created_at,
+        badgeLabel: row.status === 'open' ? 'Open' : 'In progress',
+        badgeTone: row.status === 'open' ? 'danger' : 'pending',
+        icon: 'construct',
+        sortAt: new Date(row.created_at).getTime(),
+        onPress: () =>
+          router.push({
+            pathname: '/(admin)/complaints/[id]',
+            params: { id: row.id, societyId },
+          } as Href),
+      });
+    }
+
+    return items;
+  }, [societyId, pendingRows, complaints.data, router]);
 
   const quickActions: DashboardQuickAction[] = [
     {
       id: 'pending',
-      label: 'Pending joins',
+      labelLines: ['Pending', 'Joins'],
       icon: 'people',
       onPress: () =>
         router.push({
@@ -69,7 +123,7 @@ export default function AdminHomeScreen() {
     },
     {
       id: 'flats',
-      label: 'Blocks & flats',
+      labelLines: ['Blocks', '& Flats'],
       icon: 'grid',
       onPress: () =>
         router.push({
@@ -79,7 +133,7 @@ export default function AdminHomeScreen() {
     },
     {
       id: 'share',
-      label: 'Share code',
+      labelLines: ['Share', 'Code'],
       icon: 'share',
       onPress: () => {
         if (!code) return;
@@ -90,7 +144,7 @@ export default function AdminHomeScreen() {
     },
     {
       id: 'notices',
-      label: 'Compose notice',
+      labelLines: ['Compose', 'Notice'],
       icon: 'megaphone',
       onPress: () =>
         router.push({
@@ -105,8 +159,8 @@ export default function AdminHomeScreen() {
       id: 'pending',
       label: 'Pending joins',
       value: String(pendingRows.length),
+      linkLabel: pendingRows.length > 0 ? 'Review now' : 'View queue',
       icon: 'time',
-      linkLabel: pendingRows.length > 0 ? 'Review now >' : undefined,
       onPress: () =>
         router.push({
           pathname: '/(admin)/pending',
@@ -114,20 +168,10 @@ export default function AdminHomeScreen() {
         }),
     },
     {
-      id: 'staff',
-      label: 'Staff directory',
-      value: 'Open',
-      icon: 'people',
-      onPress: () =>
-        router.push({
-          pathname: '/(admin)/staff',
-          params: { societyId: societyId! },
-        } as Href),
-    },
-    {
       id: 'complaints',
       label: 'Open complaints',
       value: String(openComplaints),
+      linkLabel: 'Review now',
       icon: 'construct',
       onPress: () =>
         router.push({
@@ -139,12 +183,49 @@ export default function AdminHomeScreen() {
       id: 'notices',
       label: 'Active notices',
       value: String(activeNoticeCount),
+      linkLabel: 'Read now',
       icon: 'megaphone',
       onPress: () =>
         router.push({
           pathname: '/(admin)/notices',
           params: { societyId: societyId! },
         } as Href),
+    },
+    {
+      id: 'staff',
+      label: 'Staff directory',
+      value: 'Open',
+      linkLabel: 'Manage',
+      icon: 'people',
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/staff',
+          params: { societyId: societyId! },
+        } as Href),
+    },
+    {
+      id: 'polls',
+      label: 'Active polls',
+      value: '0',
+      linkLabel: 'Open polls',
+      icon: 'chart',
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/polls',
+          params: societyId ? { societyId } : undefined,
+        } as Href),
+    },
+    {
+      id: 'blocks',
+      label: 'Blocks & flats',
+      value: String(flatCount),
+      linkLabel: 'Manage',
+      icon: 'grid',
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/flats',
+          params: { societyId: societyId! },
+        } as unknown as Href),
     },
   ];
 
@@ -179,85 +260,23 @@ export default function AdminHomeScreen() {
     <RoleDashboardShell
       role="admin"
       userName={profile?.full_name}
+      avatarUrl={profile?.avatar_url}
       subtitle={societyName}
       quickActions={quickActions}
       summaryCards={summaryCards}
     >
-      <View className="mt-8">
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text variant="label">Waiting for approval</Text>
-          {pendingRows.length > 0 ? (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/(admin)/pending',
-                  params: { societyId },
-                })
-              }
-            >
-              <Text variant="caption" tone="primary">
-                See all
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-
-        {pending.isLoading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : pending.isError ? (
-          <View className="gap-2">
-            <Text variant="caption" tone="danger">
-              {pending.error instanceof Error
-                ? pending.error.message
-                : 'Could not load pending joins'}
-            </Text>
-            <Button
-              label="Retry"
-              variant="outline"
-              fullWidth
-              onPress={() => void pending.refetch()}
-            />
-          </View>
-        ) : pendingRows.length === 0 ? (
-          <Text variant="body" tone="muted">
-            No pending join requests.
-          </Text>
-        ) : (
-          <View>
-            {pendingRows.slice(0, 3).map((item) => (
-              <PendingJoinCard
-                key={item.id}
-                item={item}
-                compact
-                isApproving={
-                  updateStatus.isPending &&
-                  updateStatus.variables?.membershipId === item.id &&
-                  updateStatus.variables?.status === 'approved'
-                }
-                isRejecting={
-                  updateStatus.isPending &&
-                  updateStatus.variables?.membershipId === item.id &&
-                  updateStatus.variables?.status === 'rejected'
-                }
-                onApprove={() =>
-                  void updateStatus.mutateAsync({
-                    membershipId: item.id,
-                    status: 'approved',
-                    societyId,
-                  })
-                }
-                onReject={() =>
-                  void updateStatus.mutateAsync({
-                    membershipId: item.id,
-                    status: 'rejected',
-                    societyId,
-                  })
-                }
-              />
-            ))}
-          </View>
-        )}
-      </View>
+      <NeedsAttentionFeed
+        items={attentionItems}
+        onViewAll={() =>
+          router.push({
+            pathname:
+              pendingRows.length > 0
+                ? '/(admin)/pending'
+                : '/(admin)/complaints',
+            params: { societyId },
+          } as Href)
+        }
+      />
     </RoleDashboardShell>
   );
 }

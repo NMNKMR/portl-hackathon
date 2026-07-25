@@ -1,15 +1,10 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ComplaintCard } from '@/components/complaints/complaint-card';
-import { Icon } from '@/components/ui/icon';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import { useSocietyComplaints } from '@/hooks/use-complaints';
 import { useMyMemberships } from '@/hooks/use-society';
@@ -70,21 +65,7 @@ export default function AdminComplaintsScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-1 px-5 pt-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
-          </Text>
-        </Pressable>
+        <ScreenBackButton className="mb-3" />
 
         <Text variant="title" className="text-role-admin">
           Complaints

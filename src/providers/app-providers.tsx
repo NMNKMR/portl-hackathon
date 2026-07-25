@@ -2,6 +2,10 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 
 import {
   queryClient,
@@ -25,11 +29,13 @@ export function AppProviders({ children }: AppProvidersProps) {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <BottomSheetModalProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </BottomSheetModalProvider>
-      </QueryClientProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <QueryClientProvider client={queryClient}>
+          <BottomSheetModalProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </BottomSheetModalProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

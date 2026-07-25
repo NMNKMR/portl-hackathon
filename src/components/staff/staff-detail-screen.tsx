@@ -1,34 +1,31 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
-  Share,
   View,
 } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Badge } from '@/components/ui/badge';
+import { StaffDetailContent } from '@/components/staff/staff-detail-content';
+import { StaffPassQrCard } from '@/components/staff/staff-pass-qr-card';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { VisitorFlowHeader } from '@/components/visitors/visitor-flow-header';
 import { useStaffMember } from '@/hooks/use-staff';
-import { staffFlatLabel } from '@/lib/api/staff';
 import { useThemeColors } from '@/lib/theme-colors';
-import { buildStaffQrPayload } from '@/lib/visitor-qr';
 
 type StaffDetailScreenProps = {
   staffId: string;
-  titleClassName: string;
+  role: 'admin' | 'resident' | 'guard';
   mode: 'manage' | 'verify';
   onVerified?: () => void;
 };
 
 export function StaffDetailScreen({
   staffId,
-  titleClassName,
+  role,
   mode,
   onVerified,
 }: StaffDetailScreenProps) {
@@ -39,21 +36,6 @@ export function StaffDetailScreen({
   const [verified, setVerified] = useState(false);
 
   const staff = staffQuery.data;
-  const payload = useMemo(
-    () => (staff ? buildStaffQrPayload(staff.pass_token) : null),
-    [staff],
-  );
-
-  const sharePass = async () => {
-    if (!staff || !payload) return;
-    try {
-      await Share.share({
-        message: `Portl staff pass for ${staff.name}: ${payload}`,
-      });
-    } catch {
-      // cancelled
-    }
-  };
 
   if (staffQuery.isLoading) {
     return (
@@ -65,117 +47,107 @@ export function StaffDetailScreen({
 
   if (!staff) {
     return (
-      <View className="flex-1 bg-background px-6 justify-center">
-        <Text variant="title" className={titleClassName}>
-          Staff
-        </Text>
+      <View
+        className="flex-1 bg-background px-6 justify-center"
+        style={{ paddingTop: insets.top + 16 }}
+      >
+        <VisitorFlowHeader role={role} title="Staff" showBack />
         <Text variant="body" tone="muted" className="mt-2">
           Staff member not found.
         </Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
       </View>
     );
   }
 
-  return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerStyle={{
-        paddingTop: insets.top + 12,
-        paddingBottom: Math.max(insets.bottom, 24) + 16,
-        paddingHorizontal: 20,
-      }}
-    >
-      <Pressable
-        onPress={() => router.back()}
-        className="mb-3 flex-row items-center gap-1 self-start"
-        hitSlop={8}
-      >
-        <Icon
-          family="ionic"
-          name="chevron-back"
-          size={20}
-          color={colors.primary}
-        />
-        <Text variant="label" tone="primary">
-          Back
-        </Text>
-      </Pressable>
+  const showVerifyFooter = mode === 'verify' && !verified;
 
-      <View className="mb-2 flex-row items-start justify-between gap-2">
-        <View className="flex-1">
-          <Text variant="title" className={titleClassName}>
-            {staff.name}
-          </Text>
-          <Text variant="body" tone="muted" className="mt-1">
-            {staff.category_name ?? 'Staff'} · {staffFlatLabel(staff)}
-          </Text>
-        </View>
-        {staff.is_recurring ? (
-          <Badge tone="success" label="Recurring" />
-        ) : null}
+  return (
+    <View className="flex-1 bg-background" style={{ paddingTop: insets.top + 8 }}>
+      <View className="px-5">
+        <VisitorFlowHeader
+          role={role}
+          title={mode === 'verify' ? 'Verify staff' : 'Staff pass'}
+          subtitle={staff.name}
+          showBack
+          backLabel="Back"
+        />
       </View>
 
-      {staff.phone ? (
-        <Text variant="caption" tone="muted" className="mb-4">
-          {staff.phone}
-        </Text>
-      ) : null}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + (showVerifyFooter ? 120 : 32),
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <StaffDetailContent staff={staff} />
 
-      {mode === 'verify' ? (
-        <View className="rounded-2xl border border-border bg-card px-4 py-5">
-          <Text variant="label" className="mb-2">
-            Recurring pass check
-          </Text>
-          <Text variant="body" tone="muted">
-            Confirm identity matches this directory entry, then mark verified.
-            No visitor request is created.
-          </Text>
-          {verified ? (
-            <Text variant="label" tone="primary" className="mt-4">
-              Verified — allow entry
-            </Text>
+        {mode === 'verify' ? (
+          verified ? (
+            <View className="mt-6 rounded-2xl border border-success/30 bg-success/10 px-4 py-5">
+              <View className="mb-3 self-center">
+                <View className="h-16 w-16 items-center justify-center rounded-full bg-success/15">
+                  <Icon
+                    family="ionic"
+                    name="checkmark-circle"
+                    size={48}
+                    color={colors.success}
+                  />
+                </View>
+              </View>
+              <Text variant="subtitle" className="text-center text-success">
+                Verified — allow entry
+              </Text>
+              <Text variant="caption" tone="muted" className="mt-2 text-center">
+                Identity matches the directory entry. No visitor request was
+                created.
+              </Text>
+            </View>
           ) : (
-            <Button
-              className="mt-4"
-              label="Mark verified"
-              fullWidth
-              variant="accent"
-              onPress={() => {
-                setVerified(true);
-                onVerified?.();
-              }}
-            />
-          )}
-        </View>
-      ) : payload ? (
-        <View className="items-center rounded-2xl border border-border bg-card px-4 py-6">
-          <Text variant="label" className="mb-3">
-            Recurring pass QR
-          </Text>
-          <QRCode value={payload} size={200} />
+            <View className="mt-6 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-4">
+              <Text variant="label">Gate check</Text>
+              <Text variant="body" tone="muted" className="mt-2">
+                Confirm this person matches the photo and details above, then
+                mark verified.
+              </Text>
+            </View>
+          )
+        ) : (
+          <View className="mt-6">
+            <StaffPassQrCard staff={staff} />
+          </View>
+        )}
+      </ScrollView>
+
+      {showVerifyFooter ? (
+        <View
+          className="absolute bottom-0 left-0 right-0 border-t border-border bg-card px-5 pt-3"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+        >
           <Button
-            className="mt-5"
-            label="Share pass"
-            variant="outline"
+            label="Mark verified"
             fullWidth
-            onPress={() => void sharePass()}
+            variant="accent"
+            onPress={() => {
+              setVerified(true);
+              onVerified?.();
+            }}
+          />
+        </View>
+      ) : mode === 'verify' && verified ? (
+        <View
+          className="absolute bottom-0 left-0 right-0 border-t border-border bg-card px-5 pt-3"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+        >
+          <Button
+            label="Done"
+            fullWidth
+            variant="outline"
+            onPress={() => router.back()}
           />
         </View>
       ) : null}
-
-      <Button
-        className="mt-6"
-        label="Done"
-        variant="ghost"
-        fullWidth
-        onPress={() => router.back()}
-      />
-    </ScrollView>
+    </View>
   );
 }

@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PendingJoinCard } from '@/components/admin/pending-join-card';
-import { Button } from '@/components/ui/button';
+import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
 import {
   useMyMemberships,
@@ -19,7 +19,6 @@ import { membershipFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
 export default function HouseholdPendingScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const params = useLocalSearchParams<{
@@ -81,12 +80,7 @@ export default function HouseholdPendingScreen() {
         <Text variant="body" tone="muted" className="mt-2">
           Only the primary resident of a flat can approve household members.
         </Text>
-        <Button
-          className="mt-6"
-          label="Back"
-          fullWidth
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mt-6" />
       </View>
     );
   }
@@ -97,12 +91,7 @@ export default function HouseholdPendingScreen() {
       style={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }}
     >
       <View className="px-6 mb-4">
-        <Button
-          label="Back"
-          variant="ghost"
-          className="mb-2 self-start px-0"
-          onPress={() => router.back()}
-        />
+        <ScreenBackButton className="mb-2" />
         <Text variant="title">Household joins</Text>
         <Text variant="body" tone="muted" className="mt-1">
           {flatLabel ? `${flatLabel} · ` : ''}
