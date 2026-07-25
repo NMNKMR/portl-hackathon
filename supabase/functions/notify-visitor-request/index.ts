@@ -12,6 +12,9 @@ type VisitorRecord = {
   flat_id?: string
   visitor_name?: string
   visitor_type?: string
+  status?: string
+  initiated_by?: string
+  notify_membership_id?: string | null
 }
 
 type WebhookPayload = {
@@ -67,28 +70,66 @@ Deno.serve(async (req) => {
     return json({ error: 'Missing record.id or record.flat_id', sent: 0, tokens: 0 }, 400)
   }
 
+  // Only notify for gate-initiated pending requests — not resident pre-approvals.
+  if (record.initiated_by === 'resident') {
+    return json({ sent: 0, tokens: 0, reason: 'skip_resident_preapproval' })
+  }
+  if (record.status && record.status !== 'pending') {
+    return json({ sent: 0, tokens: 0, reason: 'skip_non_pending' })
+  }
+
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  const { data: memberships, error: membershipsError } = await supabase
-    .from('memberships')
-    .select('user_id')
-    .eq('flat_id', record.flat_id)
-    .eq('role', 'resident')
-    .eq('status', 'approved')
+  let userIds: string[] = []
 
-  if (membershipsError) {
-    return json({ error: membershipsError.message, sent: 0, tokens: 0 }, 500)
+  if (record.notify_membership_id) {
+    const { data: target, error: targetError } = await supabase
+      .from('memberships')
+      .select('user_id, flat_id, role, status')
+      .eq('id', record.notify_membership_id)
+      .maybeSingle()
+
+    if (targetError) {
+      return json({ error: targetError.message, sent: 0, tokens: 0 }, 500)
+    }
+    if (
+      target?.user_id &&
+      target.flat_id === record.flat_id &&
+      target.role === 'resident' &&
+      target.status === 'approved'
+    ) {
+      userIds = [target.user_id as string]
+    }
   }
 
-  const userIds = [
-    ...new Set(
-      (memberships ?? [])
-        .map((m) => m.user_id as string)
-        .filter(Boolean),
-    ),
-  ]
+  // Fallback: primary/owner first, else all approved residents on the flat.
+  if (userIds.length === 0) {
+    const { data: memberships, error: membershipsError } = await supabase
+      .from('memberships')
+      .select('user_id, member_type')
+      .eq('flat_id', record.flat_id)
+      .eq('role', 'resident')
+      .eq('status', 'approved')
+
+    if (membershipsError) {
+      return json({ error: membershipsError.message, sent: 0, tokens: 0 }, 500)
+    }
+
+    const primary = (memberships ?? []).find((m) => m.member_type === 'primary')
+    if (primary?.user_id) {
+      userIds = [primary.user_id as string]
+    } else {
+      userIds = [
+        ...new Set(
+          (memberships ?? [])
+            .map((m) => m.user_id as string)
+            .filter(Boolean),
+        ),
+      ]
+    }
+  }
 
   if (userIds.length === 0) {
     return json({ sent: 0, tokens: 0, reason: 'no_approved_residents' })

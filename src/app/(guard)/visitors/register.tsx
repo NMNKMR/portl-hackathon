@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,9 +18,13 @@ import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import { useMyMemberships, useSocietyFlats } from '@/hooks/use-society';
-import { useCreateVisitorRequest } from '@/hooks/use-visitors';
+import {
+  useCreateVisitorRequest,
+  useFlatResidentsForGate,
+} from '@/hooks/use-visitors';
 import { formatFlatLabel } from '@/lib/api/society';
 import { uploadVisitorPhoto } from '@/lib/api/visitor-photos';
+import { displayPersonName } from '@/lib/format';
 import { useThemeColors } from '@/lib/theme-colors';
 import type { VehicleType, VisitorType } from '@/types/database';
 
@@ -67,6 +71,9 @@ export default function GuardRegisterVisitorScreen() {
   const [visitorName, setVisitorName] = useState('');
   const [visitorType, setVisitorType] = useState<VisitorType | null>('guest');
   const [flatId, setFlatId] = useState<string | null>(null);
+  const [notifyMembershipId, setNotifyMembershipId] = useState<string | null>(
+    null,
+  );
   const [phone, setPhone] = useState('');
   const [vehicleType, setVehicleType] = useState<VehicleType | null>('none');
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -74,6 +81,8 @@ export default function GuardRegisterVisitorScreen() {
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const residentsQuery = useFlatResidentsForGate(flatId ?? undefined);
 
   const flatOptions = useMemo(() => {
     const flats = flatsQuery.data ?? [];
@@ -88,6 +97,36 @@ export default function GuardRegisterVisitorScreen() {
         label: formatFlatLabel(flat),
       }));
   }, [flatsQuery.data]);
+
+  const memberOptions = useMemo(() => {
+    return (residentsQuery.data ?? []).map((m) => {
+      const name = displayPersonName(m.full_name) || 'Resident';
+      const roleHint =
+        m.member_type === 'primary'
+          ? 'Owner'
+          : m.resident_type === 'tenant'
+            ? 'Tenant'
+            : 'Household';
+      return {
+        value: m.id,
+        label: `${name} · ${roleHint}`,
+      };
+    });
+  }, [residentsQuery.data]);
+
+  useEffect(() => {
+    setNotifyMembershipId(null);
+  }, [flatId]);
+
+  useEffect(() => {
+    const rows = residentsQuery.data ?? [];
+    if (!flatId || rows.length === 0) return;
+    if (notifyMembershipId && rows.some((r) => r.id === notifyMembershipId)) {
+      return;
+    }
+    const primary = rows.find((r) => r.member_type === 'primary');
+    setNotifyMembershipId(primary?.id ?? rows[0]?.id ?? null);
+  }, [flatId, residentsQuery.data, notifyMembershipId]);
 
   const pickPhoto = () => {
     Alert.alert('Visitor photo', 'Choose a source', [
@@ -157,6 +196,10 @@ export default function GuardRegisterVisitorScreen() {
       setError('Select a flat');
       return;
     }
+    if (!notifyMembershipId) {
+      setError('Select which resident to notify');
+      return;
+    }
 
     setError(null);
     setSubmitting(true);
@@ -184,6 +227,7 @@ export default function GuardRegisterVisitorScreen() {
         photoUrl,
         vehicleNumber: vehicleNumber.trim() || null,
         vehicleType: resolvedVehicleType,
+        notifyMembershipId,
       });
 
       if (router.canGoBack()) {
@@ -332,6 +376,30 @@ export default function GuardRegisterVisitorScreen() {
             onChange={setFlatId}
           />
         </View>
+
+        {flatId ? (
+          <View className="mb-4">
+            <SelectField
+              label="Notify resident"
+              placeholder="Select member"
+              value={notifyMembershipId}
+              options={memberOptions}
+              emptyMessage={
+                residentsQuery.isLoading
+                  ? 'Loading members…'
+                  : residentsQuery.isError
+                    ? residentsQuery.error instanceof Error
+                      ? residentsQuery.error.message
+                      : 'Could not load members — run migration 010'
+                    : 'No approved residents on this flat'
+              }
+              onChange={setNotifyMembershipId}
+            />
+            <Text variant="caption" tone="muted" className="mt-1.5">
+              Push goes to this person. Defaults to the flat owner.
+            </Text>
+          </View>
+        ) : null}
 
         <View className="mb-4">
           <TextInput

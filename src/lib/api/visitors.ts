@@ -44,10 +44,12 @@ export type VisitorRequest = {
   approved_at: string | null;
   checked_in_at: string | null;
   checked_out_at: string | null;
+  notify_membership_id: string | null;
   flat_number?: string | null;
   block_name?: string | null;
 };
 
+// Keep select stable if migration 009 is not applied yet; notify id is write-only from client.
 const VISITOR_SELECT =
   'id, society_id, flat_id, guard_membership_id, initiated_by, visitor_name, visitor_phone, visitor_type, photo_url, vehicle_number, vehicle_type, status, qr_token, qr_expires_at, max_scans, scan_count, requested_at, approved_by_membership_id, approved_at, checked_in_at, checked_out_at, flats(flat_number, blocks(name))';
 
@@ -80,6 +82,8 @@ function mapVisitorRow(row: Record<string, unknown>): VisitorRequest {
     approved_at: (row.approved_at as string | null) ?? null,
     checked_in_at: (row.checked_in_at as string | null) ?? null,
     checked_out_at: (row.checked_out_at as string | null) ?? null,
+    notify_membership_id:
+      (row.notify_membership_id as string | null | undefined) ?? null,
     flat_number: flats?.flat_number ?? null,
     block_name: flats?.blocks?.name ?? null,
   };
@@ -96,6 +100,8 @@ export type CreateVisitorInput = {
   photoUrl?: string | null;
   vehicleNumber?: string | null;
   vehicleType?: VehicleType | null;
+  /** Flat member who should receive the push. Defaults to primary/owner in UI. */
+  notifyMembershipId?: string | null;
 };
 
 export async function createVisitorRequest(input: CreateVisitorInput) {
@@ -112,6 +118,7 @@ export async function createVisitorRequest(input: CreateVisitorInput) {
       photo_url: input.photoUrl ?? null,
       vehicle_number: input.vehicleNumber?.trim() || null,
       vehicle_type: input.vehicleType ?? null,
+      notify_membership_id: input.notifyMembershipId ?? null,
       status: 'pending',
       max_scans: 1,
       scan_count: 0,
@@ -121,6 +128,32 @@ export async function createVisitorRequest(input: CreateVisitorInput) {
 
   if (error) throw error;
   return mapVisitorRow(data as Record<string, unknown>);
+}
+
+export type FlatResidentForGate = {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  member_type: string | null;
+  resident_type: string | null;
+};
+
+export async function listFlatResidentsForGate(flatId: string) {
+  const { data, error } = await supabase.rpc('list_flat_residents_for_gate', {
+    p_flat_id: flatId,
+  });
+  if (error) throw error;
+
+  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    // 010 returns membership_id; 009 returned id — accept both.
+    id: String(row.membership_id ?? row.id),
+    user_id: String(row.user_id),
+    full_name: (row.full_name as string | null) || null,
+    phone: (row.phone as string | null) || null,
+    member_type: (row.member_type as string | null) || null,
+    resident_type: (row.resident_type as string | null) || null,
+  }));
 }
 
 export type CreatePreApprovalInput = {

@@ -110,11 +110,16 @@ export default function GuardHomeScreen() {
 
   const summaryCards: DashboardSummaryCard[] = [
     {
-      id: 'duty',
-      label: 'On duty',
-      value: 'Today',
+      id: 'staff',
+      label: 'Staff passes',
+      value: 'Verify',
       icon: 'shield',
-      onPress: () => comingSoon('Duty details'),
+      onPress: () => {
+        if (!societyId) return;
+        router.push(
+          `/(guard)/staff?societyId=${encodeURIComponent(societyId)}` as Href,
+        );
+      },
     },
     {
       id: 'visitors-today',

@@ -36,7 +36,14 @@ export type DashboardSummaryCard = {
   id: string;
   label: string;
   value: string;
-  icon: "people" | "time" | "megaphone" | "cash" | "construct" | "shield";
+  icon:
+    | "people"
+    | "time"
+    | "megaphone"
+    | "cash"
+    | "construct"
+    | "shield"
+    | "qr";
   linkLabel?: string;
   onPress?: () => void;
 };
@@ -73,6 +80,7 @@ const SUMMARY_ICONS = {
   cash: { family: "ionic" as const, name: "cash-outline" as const },
   construct: { family: "ionic" as const, name: "construct-outline" as const },
   shield: { family: "ionic" as const, name: "shield-checkmark-outline" as const },
+  qr: { family: "ionic" as const, name: "qr-code-outline" as const },
 };
 
 function roleAccentColor(

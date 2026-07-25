@@ -9,10 +9,8 @@ import {
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
-  Share,
   View,
 } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -21,14 +19,9 @@ import { SelectField } from '@/components/ui/select-field';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import { useMyMemberships } from '@/hooks/use-society';
-import {
-  useAttachQrToPreApproval,
-  useCreateGuestPreApproval,
-} from '@/hooks/use-visitors';
+import { useCreateGuestPreApproval } from '@/hooks/use-visitors';
 import { uploadVisitorPhoto } from '@/lib/api/visitor-photos';
-import type { VisitorRequest } from '@/lib/api/visitors';
 import { useThemeColors } from '@/lib/theme-colors';
-import { buildGuestQrPayload } from '@/lib/visitor-qr';
 import type { VehicleType, VisitorType } from '@/types/database';
 
 const VISITOR_TYPE_OPTIONS = [
@@ -46,7 +39,7 @@ const VEHICLE_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function ResidentPreApproveScreen() {
+export default function ResidentPreApproveCreateScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
@@ -54,7 +47,6 @@ export default function ResidentPreApproveScreen() {
 
   const memberships = useMyMemberships();
   const createPre = useCreateGuestPreApproval();
-  const attachQr = useAttachQrToPreApproval();
 
   const membership = useMemo(() => {
     const rows = memberships.data ?? [];
@@ -82,7 +74,6 @@ export default function ResidentPreApproveScreen() {
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState<VisitorRequest | null>(null);
 
   const pickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -118,7 +109,7 @@ export default function ResidentPreApproveScreen() {
     if (number) setPhone(number.replace(/\s+/g, ''));
   };
 
-  const save = async (withQr: boolean) => {
+  const save = async () => {
     if (!membership || !societyId || !flatId) return;
     const name = visitorName.trim();
     if (!name) {
@@ -161,38 +152,16 @@ export default function ResidentPreApproveScreen() {
         vehicleNumber: vehicleNumber.trim() || null,
         vehicleType: resolvedVehicleType,
         maxScans: scans,
-        withQr,
+        withQr: false,
       });
-      setCreated(row);
+
+      router.replace(
+        `/(resident)/pre-approvals/${row.id}?societyId=${encodeURIComponent(societyId)}` as Href,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save pre-approval');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const generateQrLater = async () => {
-    if (!created) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const row = await attachQr.mutateAsync(created.id);
-      setCreated(row);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not generate QR');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const shareQr = async () => {
-    if (!created?.qr_token) return;
-    try {
-      await Share.share({
-        message: `Portl guest pass for ${created.visitor_name}: ${buildGuestQrPayload(created.qr_token)}`,
-      });
-    } catch {
-      // cancelled
     }
   };
 
@@ -220,93 +189,6 @@ export default function ResidentPreApproveScreen() {
           onPress={() => router.replace('/(app)' as Href)}
         />
       </View>
-    );
-  }
-
-  if (created) {
-    const payload = created.qr_token
-      ? buildGuestQrPayload(created.qr_token)
-      : null;
-
-    return (
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerStyle={{
-          paddingTop: insets.top + 12,
-          paddingBottom: Math.max(insets.bottom, 24) + 16,
-          paddingHorizontal: 20,
-        }}
-      >
-        <Text variant="title" className="text-role-resident">
-          Pre-approval ready
-        </Text>
-        <Text variant="body" tone="muted" className="mt-1">
-          {created.visitor_name} · {created.visitor_type}
-          {created.max_scans > 1 ? ` · ${created.max_scans} entries` : ''}
-        </Text>
-
-        {payload ? (
-          <View className="mt-6 items-center rounded-2xl border border-border bg-card px-4 py-6">
-            <Text variant="label" className="mb-3">
-              QR available — guard must scan
-            </Text>
-            <QRCode value={payload} size={200} />
-            <Button
-              className="mt-5"
-              label="Share pass"
-              variant="outline"
-              fullWidth
-              onPress={() => void shareQr()}
-            />
-          </View>
-        ) : (
-          <View className="mt-6 rounded-2xl border border-border bg-card px-4 py-4">
-            <Text variant="body">
-              Saved without QR. Guard will admit from the pre-approved list using
-              name{created.photo_url ? ' and photo' : ''}.
-            </Text>
-            <Text variant="caption" tone="muted" className="mt-2">
-              Recommended: generate a QR when sharing with a known person.
-            </Text>
-            <Button
-              className="mt-4"
-              label="Generate QR"
-              variant="accent"
-              fullWidth
-              loading={submitting}
-              onPress={() => void generateQrLater()}
-            />
-          </View>
-        )}
-
-        {error ? (
-          <Text variant="caption" tone="danger" className="mt-3">
-            {error}
-          </Text>
-        ) : null}
-
-        <Button
-          className="mt-6"
-          label="Done"
-          fullWidth
-          onPress={() => router.back()}
-        />
-        <Button
-          className="mt-2"
-          label="Create another"
-          variant="ghost"
-          fullWidth
-          onPress={() => {
-            setCreated(null);
-            setVisitorName('');
-            setPhone('');
-            setPhotoUri(null);
-            setPhotoBase64(null);
-            setMaxScans('1');
-            setError(null);
-          }}
-        />
-      </ScrollView>
     );
   }
 
@@ -346,7 +228,8 @@ export default function ResidentPreApproveScreen() {
           Pre-approve visitor
         </Text>
         <Text variant="body" tone="muted" className="mt-1 mb-5">
-          Save for the gate now. Add a QR when sharing with someone you know.
+          Create the pass first. Generate a QR on the next screen if you want to
+          share it.
         </Text>
 
         <Button
@@ -449,18 +332,10 @@ export default function ResidentPreApproveScreen() {
 
         <Button
           className="mt-6"
-          label="Save pre-approval"
+          label="Create pre-approval"
           fullWidth
           loading={submitting}
-          onPress={() => void save(false)}
-        />
-        <Button
-          className="mt-2"
-          label="Generate QR (recommended for known guests)"
-          variant="accent"
-          fullWidth
-          loading={submitting}
-          onPress={() => void save(true)}
+          onPress={() => void save()}
         />
       </ScrollView>
     </KeyboardAvoidingView>

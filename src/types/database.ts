@@ -28,6 +28,30 @@ export type VisitorStatus =
 export type VehicleType = 'car' | 'bike' | 'other' | 'none';
 export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
 
+/** Hand types for Tier 2 staff tables (see schema.sql). */
+export type StaffCategoryRow = {
+  id: string;
+  name: string;
+  icon: string | null;
+  is_system_default: boolean;
+  society_id: string | null;
+  created_at: string;
+};
+
+export type StaffDirectoryRow = {
+  id: string;
+  society_id: string;
+  flat_id: string | null;
+  name: string;
+  category_id: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  is_recurring: boolean;
+  pass_token: string;
+  created_by_membership_id: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {

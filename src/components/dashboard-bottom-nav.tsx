@@ -51,6 +51,12 @@ function visitorsHref(role: DashboardRole): Href {
   return "/(resident)/visitors" as Href;
 }
 
+function noticesHref(role: DashboardRole): Href | null {
+  if (role === "admin") return "/(admin)/notices" as Href;
+  if (role === "resident") return "/(resident)/notices" as Href;
+  return null;
+}
+
 type DashboardBottomNavProps = {
   role: DashboardRole;
   roleAccent: string;
@@ -83,7 +89,11 @@ export function DashboardBottomNav({
       id: "notices",
       label: "Notices",
       icon: "megaphone",
-      onPress: comingSoonAlert,
+      onPress: () => {
+        const href = noticesHref(role);
+        if (href) router.replace(href);
+        else comingSoonAlert();
+      },
     },
     {
       id: "amenities",

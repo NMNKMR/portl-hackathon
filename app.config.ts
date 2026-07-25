@@ -115,6 +115,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "Allow Portl to import guest details from your contacts.",
       },
     ],
+    "expo-sharing",
     "@react-native-vector-icons/ionicons",
     "@react-native-vector-icons/material-icons",
     "@react-native-vector-icons/material-design-icons",

@@ -12,6 +12,7 @@ import {
   fetchVisitorRequest,
   fetchVisitorRequestsByFlat,
   fetchVisitorRequestsBySociety,
+  listFlatResidentsForGate,
   respondToVisitorRequest,
   type CreatePreApprovalInput,
   type CreateVisitorInput,
@@ -40,6 +41,14 @@ export function useVisitorRequest(id: string | undefined) {
     queryKey: queryKeys.visitorRequests.detail(id ?? ''),
     queryFn: () => fetchVisitorRequest(id!),
     enabled: Boolean(id),
+  });
+}
+
+export function useFlatResidentsForGate(flatId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.visitorRequests.flatResidentsForGate(flatId ?? ''),
+    queryFn: () => listFlatResidentsForGate(flatId!),
+    enabled: Boolean(flatId),
   });
 }
 

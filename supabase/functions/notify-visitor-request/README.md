@@ -45,6 +45,12 @@ Payload shapes handled by the function:
 - `{ "type": "INSERT", "table": "visitor_requests", "record": { ... } }`
 - `{ "record": { ... } }`
 
+Skips push when `initiated_by === 'resident'` (pre-approvals) or `status !== 'pending'`.
+
+When `notify_membership_id` is set (guard register picker), push goes only to that member. Otherwise falls back to the flat primary/owner, then all approved residents.
+
+Redeploy after pulling these changes. Requires migration `009_visitor_notify_member.sql`.
+
 ## Notification shape
 
 | Field | Value |

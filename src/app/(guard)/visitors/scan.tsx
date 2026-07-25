@@ -3,8 +3,8 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Pressable,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,17 +12,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { TextInput } from '@/components/ui/text-input';
 import { useMyMemberships } from '@/hooks/use-society';
 import { useAdmitVisitorEntry } from '@/hooks/use-visitors';
+import { fetchStaffByPassToken, staffFlatLabel } from '@/lib/api/staff';
 import { fetchVisitorByQrToken, visitorFlatLabel } from '@/lib/api/visitors';
 import { useThemeColors } from '@/lib/theme-colors';
 import { parseQrPayload, remainingScans } from '@/lib/visitor-qr';
+
+type ScanSuccess = {
+  title: string;
+  detail: string;
+  staffHref?: Href;
+};
 
 export default function GuardScanVisitorScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ societyId?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -43,24 +50,51 @@ export default function GuardScanVisitorScreen() {
   }, [memberships.data, params.societyId]);
 
   const [locked, setLocked] = useState(false);
-  const [manual, setManual] = useState('');
-  const [status, setStatus] = useState<string | null>(null);
+  const [success, setSuccess] = useState<ScanSuccess | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const squareSize = Math.min(width - 40, 360);
+
+  const resetScan = () => {
+    setSuccess(null);
+    setError(null);
+    setLocked(false);
+  };
+
   const handlePayload = async (raw: string) => {
-    if (locked) return;
+    if (locked || success) return;
     setLocked(true);
     setError(null);
-    setStatus(null);
 
     try {
       const parsed = parseQrPayload(raw);
-      if (!parsed || parsed.kind !== 'guest') {
-        throw new Error('Not a Portl guest pass QR');
+      if (!parsed) {
+        throw new Error('Not a Portl guest or staff QR');
+      }
+
+      if (parsed.kind === 'staff') {
+        const staff = await fetchStaffByPassToken(parsed.token);
+        if (!staff) throw new Error('Staff pass not found');
+        if (
+          membership?.society_id &&
+          staff.society_id !== membership.society_id
+        ) {
+          throw new Error('This pass is for another society');
+        }
+        if (!staff.is_recurring) {
+          throw new Error('This staff pass is not marked recurring');
+        }
+        setSuccess({
+          title: 'Staff verified',
+          detail: `${staff.name} · ${staff.category_name ?? 'Staff'} · ${staffFlatLabel(staff)}`,
+          staffHref:
+            `/(guard)/staff/${staff.id}?societyId=${encodeURIComponent(staff.society_id)}` as Href,
+        });
+        return;
       }
 
       const visitor = await fetchVisitorByQrToken(parsed.token);
-      if (!visitor) throw new Error('Pass not found');
+      if (!visitor) throw new Error('Guest pass not found');
       if (
         membership?.society_id &&
         visitor.society_id !== membership.society_id
@@ -74,14 +108,15 @@ export default function GuardScanVisitorScreen() {
       });
 
       const left = remainingScans(updated);
-      setStatus(
-        `Admitted ${updated.visitor_name} · ${visitorFlatLabel(updated)}` +
+      setSuccess({
+        title: 'Entry recorded',
+        detail:
+          `${updated.visitor_name} · ${visitorFlatLabel(updated)}` +
           (left > 0 ? ` · ${left} left` : ' · pass complete'),
-      );
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not admit pass');
-    } finally {
-      setTimeout(() => setLocked(false), 1600);
+      setError(err instanceof Error ? err.message : 'Could not process pass');
+      setTimeout(() => setLocked(false), 1200);
     }
   };
 
@@ -107,104 +142,132 @@ export default function GuardScanVisitorScreen() {
   }
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-background" behavior="padding">
-      <View
-        className="flex-1 px-5"
-        style={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }}
+    <View
+      className="flex-1 bg-background px-5"
+      style={{
+        paddingTop: insets.top + 12,
+        paddingBottom: insets.bottom + 16,
+      }}
+    >
+      <Pressable
+        onPress={() => router.back()}
+        className="mb-3 flex-row items-center gap-1 self-start"
+        hitSlop={8}
       >
-        <Pressable
-          onPress={() => router.back()}
-          className="mb-3 flex-row items-center gap-1 self-start"
-          hitSlop={8}
-        >
-          <Icon
-            family="ionic"
-            name="chevron-back"
-            size={20}
-            color={colors.primary}
-          />
-          <Text variant="label" tone="primary">
-            Back
+        <Icon
+          family="ionic"
+          name="chevron-back"
+          size={20}
+          color={colors.primary}
+        />
+        <Text variant="label" tone="primary">
+          Back
+        </Text>
+      </Pressable>
+
+      <Text variant="title" className="text-role-guard">
+        Scan QR
+      </Text>
+      <Text variant="body" tone="muted" className="mt-1 mb-5">
+        Align the guest or staff pass inside the square.
+      </Text>
+
+      {success ? (
+        <View className="flex-1 items-center justify-center px-4">
+          <View className="mb-4 h-28 w-28 items-center justify-center rounded-full bg-success/15">
+            <Icon
+              family="ionic"
+              name="checkmark-circle"
+              size={88}
+              color={colors.success}
+            />
+          </View>
+          <Text variant="title" className="text-center text-success">
+            {success.title}
           </Text>
-        </Pressable>
-
-        <Text variant="title" className="text-role-guard">
-          Scan guest QR
-        </Text>
-        <Text variant="body" tone="muted" className="mt-1 mb-4">
-          Only for passes marked QR available. List-admit for photo-only passes.
-        </Text>
-
-        {!permission?.granted ? (
-          <View className="mb-4 rounded-xl border border-border bg-card px-4 py-4">
-            <Text variant="body" tone="muted">
-              Camera permission is needed to scan. You can still paste a token
-              below if the camera build is unavailable.
-            </Text>
+          <Text
+            variant="caption"
+            tone="muted"
+            className="mt-2 text-center px-2"
+          >
+            {success.detail}
+          </Text>
+          {success.staffHref ? (
             <Button
-              className="mt-3"
-              label="Allow camera"
-              onPress={() => void requestPermission()}
+              className="mt-8"
+              label="View staff"
+              fullWidth
+              onPress={() => router.push(success.staffHref!)}
             />
-          </View>
-        ) : (
-          <View className="mb-4 h-64 overflow-hidden rounded-xl border border-border">
-            <CameraView
-              style={{ flex: 1 }}
-              facing="back"
-              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-              onBarcodeScanned={
-                locked
-                  ? undefined
-                  : (result) => {
-                      void handlePayload(result.data);
-                    }
-              }
-            />
-          </View>
-        )}
+          ) : null}
+          <Button
+            className="mt-3"
+            label="Scan another"
+            variant={success.staffHref ? 'outline' : 'accent'}
+            fullWidth
+            onPress={resetScan}
+          />
+        </View>
+      ) : (
+        <>
+          {!permission?.granted ? (
+            <View className="mb-4 rounded-xl border border-border bg-card px-4 py-4">
+              <Text variant="body" tone="muted">
+                Camera permission is needed to scan QR passes.
+              </Text>
+              <Button
+                className="mt-3"
+                label="Allow camera"
+                onPress={() => void requestPermission()}
+              />
+            </View>
+          ) : (
+            <View className="items-center">
+              <View
+                className="overflow-hidden rounded-2xl border-2 border-role-guard"
+                style={{ width: squareSize, height: squareSize }}
+              >
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                  onBarcodeScanned={
+                    locked
+                      ? undefined
+                      : (result) => {
+                          void handlePayload(result.data);
+                        }
+                  }
+                />
+              </View>
+            </View>
+          )}
 
-        {status ? (
-          <Text variant="label" tone="primary" className="mb-2">
-            {status}
-          </Text>
-        ) : null}
-        {error ? (
-          <Text variant="caption" tone="danger" className="mb-2">
-            {error}
-          </Text>
-        ) : null}
+          {error ? (
+            <Text variant="caption" tone="danger" className="mt-4 text-center">
+              {error}
+            </Text>
+          ) : (
+            <Text variant="caption" tone="muted" className="mt-4 text-center">
+              {locked ? 'Processing…' : 'Hold steady over the code'}
+            </Text>
+          )}
 
-        <TextInput
-          label="Manual token / payload"
-          value={manual}
-          onChangeText={setManual}
-          placeholder="portl:guest:… or UUID"
-          autoCapitalize="none"
-        />
-        <Button
-          className="mt-3"
-          label="Admit from token"
-          variant="outline"
-          fullWidth
-          loading={admit.isPending}
-          onPress={() => void handlePayload(manual)}
-        />
-
-        <Button
-          className="mt-4"
-          label="Open visitor log"
-          variant="ghost"
-          fullWidth
-          onPress={() =>
-            router.push(
-              membership.society_id
-                ? (`/(guard)/visitors?societyId=${encodeURIComponent(membership.society_id)}&filter=preapproved` as Href)
-                : ('/(guard)/visitors?filter=preapproved' as Href),
-            )
-          }
-        />
-      </View>
-    </KeyboardAvoidingView>
+          <Button
+            className="mt-auto"
+            label="Staff directory"
+            variant="ghost"
+            fullWidth
+            onPress={() =>
+              router.push(
+                membership.society_id
+                  ? (`/(guard)/staff?societyId=${encodeURIComponent(membership.society_id)}` as Href)
+                  : ('/(guard)/staff' as Href),
+              )
+            }
+          />
+        </>
+      )}
+    </View>
   );
 }

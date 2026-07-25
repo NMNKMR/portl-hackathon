@@ -11,12 +11,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/hooks/use-auth';
+import { useSocietyComplaints } from '@/hooks/use-complaints';
+import { useSocietyNotices } from '@/hooks/use-notices';
 import {
   useMyMemberships,
   usePendingMemberships,
   useSociety,
   useUpdateMembershipStatus,
 } from '@/hooks/use-society';
+import { countOpenComplaints } from '@/lib/api/complaints';
 import { useThemeColors } from '@/lib/theme-colors';
 
 function comingSoon(label: string) {
@@ -43,9 +46,14 @@ export default function AdminHomeScreen() {
 
   const society = useSociety(societyId);
   const pending = usePendingMemberships(societyId);
+  const complaints = useSocietyComplaints(societyId);
+  const notices = useSocietyNotices(societyId);
   const updateStatus = useUpdateMembershipStatus();
   const code = params.code ?? society.data?.code;
   const pendingRows = pending.data ?? [];
+  const openComplaints = countOpenComplaints(complaints.data ?? []);
+  const activeNoticeCount = (notices.data ?? []).filter((n) => n.is_active)
+    .length;
   const societyName = society.data?.name ?? 'Your society';
 
   const quickActions: DashboardQuickAction[] = [
@@ -84,7 +92,11 @@ export default function AdminHomeScreen() {
       id: 'notices',
       label: 'Compose notice',
       icon: 'megaphone',
-      onPress: () => comingSoon('Notice composer'),
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/notices',
+          params: { societyId: societyId! },
+        } as Href),
     },
   ];
 
@@ -102,25 +114,37 @@ export default function AdminHomeScreen() {
         }),
     },
     {
-      id: 'residents',
-      label: 'Residents',
-      value: '—',
+      id: 'staff',
+      label: 'Staff directory',
+      value: 'Open',
       icon: 'people',
-      onPress: () => comingSoon('Residents directory'),
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/staff',
+          params: { societyId: societyId! },
+        } as Href),
     },
     {
       id: 'complaints',
       label: 'Open complaints',
-      value: '0',
+      value: String(openComplaints),
       icon: 'construct',
-      onPress: () => comingSoon('Complaints triage'),
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/complaints',
+          params: { societyId: societyId! },
+        } as Href),
     },
     {
       id: 'notices',
       label: 'Active notices',
-      value: '0',
+      value: String(activeNoticeCount),
       icon: 'megaphone',
-      onPress: () => comingSoon('Notices'),
+      onPress: () =>
+        router.push({
+          pathname: '/(admin)/notices',
+          params: { societyId: societyId! },
+        } as Href),
     },
   ];
 

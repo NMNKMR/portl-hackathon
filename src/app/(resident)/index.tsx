@@ -14,9 +14,12 @@ import {
   useMyMemberships,
   usePendingHousehold,
 } from '@/hooks/use-society';
+import { useActiveNotices } from '@/hooks/use-notices';
 import { useFlatVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
+import { countUnreadNotices } from '@/lib/api/notices';
 import { membershipFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
+import { remainingScans } from '@/lib/visitor-qr';
 
 function comingSoon(label: string) {
   Alert.alert('Coming next', `${label} will land with the next feature slice.`);
@@ -57,6 +60,24 @@ export default function ResidentHomeScreen() {
       (flatVisitors.data ?? []).filter((v) => v.status === 'pending').length,
     [flatVisitors.data],
   );
+  const preApprovalCount = useMemo(
+    () =>
+      (flatVisitors.data ?? []).filter(
+        (v) =>
+          v.initiated_by === 'resident' &&
+          v.status === 'approved' &&
+          remainingScans(v) > 0,
+      ).length,
+    [flatVisitors.data],
+  );
+  const activeNotices = useActiveNotices({
+    societyId: membership?.society_id,
+    membershipId: membership?.id,
+  });
+  const unreadNoticeCount = useMemo(
+    () => countUnreadNotices(activeNotices.data ?? []),
+    [activeNotices.data],
+  );
 
   const flatLabel = membership ? membershipFlatLabel(membership) : null;
   const societyName = membership?.societies?.name ?? 'Your society';
@@ -96,7 +117,7 @@ export default function ResidentHomeScreen() {
       onPress: () => {
         if (!membership?.society_id) return;
         router.push(
-          `/(resident)/visitors/pre-approve?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+          `/(resident)/pre-approvals?societyId=${encodeURIComponent(membership.society_id)}` as Href,
         );
       },
     },
@@ -111,10 +132,26 @@ export default function ResidentHomeScreen() {
         ]
       : []),
     {
+      id: 'staff',
+      label: 'Staff',
+      icon: 'people',
+      onPress: () => {
+        if (!membership?.society_id) return;
+        router.push(
+          `/(resident)/staff?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+        );
+      },
+    },
+    {
       id: 'complaint',
       label: 'Raise complaint',
       icon: 'construct',
-      onPress: () => comingSoon('Complaints'),
+      onPress: () => {
+        if (!membership?.society_id) return;
+        router.push(
+          `/(resident)/complaints?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+        );
+      },
     },
   ];
 
@@ -128,11 +165,29 @@ export default function ResidentHomeScreen() {
       onPress: () => openVisitors(true),
     },
     {
+      id: 'pre-approvals',
+      label: 'Pre-approvals',
+      value: String(preApprovalCount),
+      icon: 'qr',
+      linkLabel: preApprovalCount > 0 ? 'View passes >' : 'Create >',
+      onPress: () => {
+        if (!membership?.society_id) return;
+        router.push(
+          `/(resident)/pre-approvals?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+        );
+      },
+    },
+    {
       id: 'notices',
       label: 'New notices',
-      value: '0',
+      value: String(unreadNoticeCount),
       icon: 'megaphone',
-      onPress: () => comingSoon('Notices'),
+      onPress: () => {
+        if (!membership?.society_id) return;
+        router.push(
+          `/(resident)/notices?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+        );
+      },
     },
     {
       id: 'dues',
