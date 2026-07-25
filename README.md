@@ -8,6 +8,11 @@ Built for a hackathon with production-minded architecture: a flawless **Tier 1 d
 
 ---
 
+## Demo Video
+https://drive.google.com/file/d/1NKI1kVb56aKupuygEu7ezggxqhQVZBnU/view?usp=drivesdk
+
+---
+
 ## The problem
 
 A delivery partner reaches the gate. The guard calls the flat. The resident misses the call. The visitor waits.
