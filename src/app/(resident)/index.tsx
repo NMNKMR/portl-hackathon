@@ -16,6 +16,7 @@ import { Text } from '@/components/ui/text';
 import { useAuth } from '@/hooks/use-auth';
 import { useFlatComplaints } from '@/hooks/use-complaints';
 import { useActiveNotices } from '@/hooks/use-notices';
+import { useSocietyPolls } from '@/hooks/use-polls';
 import {
   useFlatMembers,
   useMyMemberships,
@@ -23,6 +24,7 @@ import {
 } from '@/hooks/use-society';
 import { useFlatVisitors, useVisitorRealtime } from '@/hooks/use-visitors';
 import { countUnreadNotices } from '@/lib/api/notices';
+import { countOpenUnvotedPolls } from '@/lib/api/polls';
 import { membershipFlatLabel } from '@/lib/api/society';
 import { displayPersonName } from '@/lib/format';
 import { useThemeColors } from '@/lib/theme-colors';
@@ -85,6 +87,14 @@ export default function ResidentHomeScreen() {
   const unreadNoticeCount = useMemo(
     () => countUnreadNotices(activeNotices.data ?? []),
     [activeNotices.data],
+  );
+  const societyPolls = useSocietyPolls({
+    societyId,
+    membershipId: membership?.id,
+  });
+  const unvotedPollCount = useMemo(
+    () => countOpenUnvotedPolls(societyPolls.data ?? []),
+    [societyPolls.data],
   );
   const complaints = useFlatComplaints(flatId);
 
@@ -164,6 +174,24 @@ export default function ResidentHomeScreen() {
       });
     }
 
+    for (const poll of societyPolls.data ?? []) {
+      if (!poll.is_open || poll.my_vote_option_id) continue;
+      items.push({
+        id: `poll-${poll.id}`,
+        title: `Poll · ${poll.question}`,
+        subtitle: 'Your vote needed',
+        timestampIso: poll.created_at,
+        badgeLabel: 'Vote',
+        badgeTone: 'pending',
+        icon: 'chart',
+        sortAt: new Date(poll.created_at).getTime() + 1_000,
+        onPress: () =>
+          router.push(
+            `/(resident)/polls/${poll.id}?societyId=${encodeURIComponent(societyId)}` as Href,
+          ),
+      });
+    }
+
     for (const c of complaints.data ?? []) {
       if (c.status !== 'open' && c.status !== 'in_progress') continue;
       items.push({
@@ -192,6 +220,7 @@ export default function ResidentHomeScreen() {
     isPrimary,
     householdPending.data,
     activeNotices.data,
+    societyPolls.data,
     complaints.data,
     flatId,
     router,
@@ -294,8 +323,8 @@ export default function ResidentHomeScreen() {
     {
       id: 'polls',
       label: 'Active polls',
-      value: '0',
-      linkLabel: 'Vote now',
+      value: String(unvotedPollCount),
+      linkLabel: unvotedPollCount > 0 ? 'Vote now' : 'View polls',
       icon: 'chart',
       onPress: () => {
         if (!societyId) return;

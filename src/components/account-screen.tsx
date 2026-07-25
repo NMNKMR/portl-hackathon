@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import type { DashboardRole } from '@/components/role-dashboard-shell';
-import { AppBottomSheet } from '@/components/ui/bottom-sheet';
+import { AppBottomSheet, BottomSheetFormFields } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -499,50 +499,51 @@ export function AccountScreen({
         }
       >
         <KeyboardAvoidingView behavior="padding">
-          <View className="items-center py-2">
-            <Pressable
-              onPress={() => void pickAvatar()}
-              disabled={picking || saving}
-              className="items-center"
-            >
-              <View
-                className="h-24 w-24 items-center justify-center overflow-hidden rounded-full"
-                style={{ backgroundColor: `${accent}22` }}
+          <BottomSheetFormFields>
+            <View className="items-center py-2">
+              <Pressable
+                onPress={() => void pickAvatar()}
+                disabled={picking || saving}
+                className="items-center"
               >
-                {picking ? (
-                  <ActivityIndicator color={accent} />
-                ) : avatarDraft ? (
-                  <Image
-                    key={avatarDraft}
-                    source={{ uri: avatarDraft }}
-                    style={{ width: 96, height: 96 }}
-                    contentFit="cover"
-                    recyclingKey={avatarDraft}
-                  />
-                ) : (
-                  <Icon family="ionic" name="person" size={40} color={accent} />
-                )}
-              </View>
-              <Text variant="caption" tone="primary" className="mt-2">
-                Change photo
+                <View
+                  className="h-24 w-24 items-center justify-center overflow-hidden rounded-full"
+                  style={{ backgroundColor: `${accent}22` }}
+                >
+                  {picking ? (
+                    <ActivityIndicator color={accent} />
+                  ) : avatarDraft ? (
+                    <Image
+                      key={avatarDraft}
+                      source={{ uri: avatarDraft }}
+                      style={{ width: 96, height: 96 }}
+                      contentFit="cover"
+                      recyclingKey={avatarDraft}
+                    />
+                  ) : (
+                    <Icon family="ionic" name="person" size={40} color={accent} />
+                  )}
+                </View>
+                <Text variant="caption" tone="primary" className="mt-2">
+                  Change photo
+                </Text>
+              </Pressable>
+            </View>
+
+            <TextInput
+              label="Full name"
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              autoCapitalize="words"
+              placeholder="Your name"
+            />
+
+            {formError ? (
+              <Text variant="caption" tone="danger">
+                {formError}
               </Text>
-            </Pressable>
-          </View>
-
-          <TextInput
-            className="mt-4"
-            label="Full name"
-            value={nameDraft}
-            onChangeText={setNameDraft}
-            autoCapitalize="words"
-            placeholder="Your name"
-          />
-
-          {formError ? (
-            <Text variant="caption" tone="danger" className="mt-3">
-              {formError}
-            </Text>
-          ) : null}
+            ) : null}
+          </BottomSheetFormFields>
         </KeyboardAvoidingView>
       </AppBottomSheet>
     </View>

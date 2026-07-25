@@ -5,6 +5,7 @@ import {
   fetchComplaint,
   listComplaintsByFlat,
   listComplaintsBySociety,
+  updateComplaint,
   updateComplaintStatus,
 } from '@/lib/api/complaints';
 import { queryKeys } from '@/lib/query-keys';
@@ -52,6 +53,19 @@ export function useUpdateComplaintStatus() {
   return useMutation({
     mutationFn: (input: { id: string; status: ComplaintStatus }) =>
       updateComplaintStatus(input),
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.complaints.all });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.complaints.detail(data.id),
+      });
+    },
+  });
+}
+
+export function useUpdateComplaint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateComplaint,
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: queryKeys.complaints.all });
       void qc.invalidateQueries({

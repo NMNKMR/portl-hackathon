@@ -1,73 +1,61 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NoticeDetailBody } from '@/components/notices/notice-detail-body';
+import { PollDetailContent } from '@/components/polls/poll-detail-content';
 import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
-import { useActiveNotices, useMarkNoticeRead, useNotice } from '@/hooks/use-notices';
+import { useCastVote, usePoll } from '@/hooks/use-polls';
 import { useMyMemberships } from '@/hooks/use-society';
+import { getPollErrorMessage } from '@/lib/api/polls';
+import { resolveApprovedMembership } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
 
-export default function ResidentNoticeDetailScreen() {
+export default function ResidentPollDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const params = useLocalSearchParams<{ id?: string; societyId?: string }>();
-  const noticeId = typeof params.id === 'string' ? params.id : undefined;
+  const pollId = typeof params.id === 'string' ? params.id : undefined;
 
   const memberships = useMyMemberships();
-  const membership = useMemo(() => {
-    const rows = memberships.data ?? [];
-    if (params.societyId) {
-      return rows.find(
-        (m) =>
-          m.society_id === params.societyId &&
-          m.role === 'resident' &&
-          m.status === 'approved',
-      );
-    }
-    return rows.find((m) => m.role === 'resident' && m.status === 'approved');
-  }, [memberships.data, params.societyId]);
+  const membership = useMemo(
+    () =>
+      resolveApprovedMembership(memberships.data ?? [], {
+        societyId: params.societyId,
+        role: 'resident',
+      }),
+    [memberships.data, params.societyId],
+  );
 
-  const notice = useNotice(noticeId);
-  const activeNotices = useActiveNotices({
-    societyId: membership?.society_id,
+  const poll = usePoll({
+    id: pollId,
     membershipId: membership?.id,
   });
-  const markRead = useMarkNoticeRead();
-  const [readAtOverride, setReadAtOverride] = useState<string | null>(null);
+  const castVote = useCastVote();
+  const [voteError, setVoteError] = useState<string | null>(null);
 
-  const readAt = useMemo(() => {
-    if (readAtOverride) return readAtOverride;
-    if (!noticeId) return null;
-    const fromList = activeNotices.data?.find((n) => n.id === noticeId)?.read_at;
-    return fromList ?? null;
-  }, [activeNotices.data, noticeId, readAtOverride]);
-
-  const noticeWithRead = notice.data
-    ? { ...notice.data, read_at: readAt }
-    : null;
-
-  useEffect(() => {
-    if (!membership?.id || !noticeId || readAt) return;
-    const optimisticReadAt = new Date().toISOString();
-    setReadAtOverride(optimisticReadAt);
-    markRead.mutate(
+  const handleVote = (optionId: string) => {
+    if (!pollId || !membership?.id || !membership.society_id) return;
+    if (castVote.isPending || poll.data?.my_vote_option_id) return;
+    setVoteError(null);
+    castVote.mutate(
       {
-        noticeId,
+        pollId,
+        optionId,
         membershipId: membership.id,
         societyId: membership.society_id,
       },
       {
-        onSuccess: (result) => setReadAtOverride(result.read_at),
-        onError: () => setReadAtOverride(null),
+        onError: (err) => {
+          setVoteError(getPollErrorMessage(err));
+        },
       },
     );
-  }, [membership?.id, membership?.society_id, noticeId, readAt]);
+  };
 
-  if (memberships.isLoading || notice.isLoading) {
+  if (memberships.isLoading || poll.isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator color={colors.roleResident} />
@@ -82,7 +70,7 @@ export default function ResidentNoticeDetailScreen() {
         style={{ paddingTop: insets.top }}
       >
         <Text variant="title" className="text-role-resident">
-          Notice
+          Poll
         </Text>
         <Text variant="body" tone="muted" className="mt-2">
           No approved resident membership.
@@ -91,25 +79,25 @@ export default function ResidentNoticeDetailScreen() {
     );
   }
 
-  if (!noticeWithRead) {
+  if (!poll.data) {
     return (
       <View
         className="flex-1 bg-background px-6 justify-center"
         style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 16 }}
       >
         <Text variant="title" className="text-role-resident">
-          Notice not found
+          Poll not found
         </Text>
         <Text variant="body" tone="muted" className="mt-2">
-          This notice may have expired or been removed.
+          This poll may have closed or been removed.
         </Text>
         <ScreenBackButton
           className="mt-6"
-          label="Back to notices"
+          label="Back to polls"
           onPress={() => {
             const href = membership.society_id
-              ? (`/(resident)/notices?societyId=${encodeURIComponent(membership.society_id)}` as Href)
-              : ('/(resident)/notices' as Href);
+              ? (`/(resident)/polls?societyId=${encodeURIComponent(membership.society_id)}` as Href)
+              : ('/(resident)/polls' as Href);
             router.replace(href);
           }}
         />
@@ -124,13 +112,19 @@ export default function ResidentNoticeDetailScreen() {
     >
       <View className="px-6">
         <ScreenBackButton className="mb-4" />
+        {voteError ? (
+          <Text variant="caption" tone="danger" className="mb-3">
+            {voteError}
+          </Text>
+        ) : null}
       </View>
 
-      <NoticeDetailBody
-        notice={noticeWithRead}
+      <PollDetailContent
+        poll={poll.data}
         roleAccentClass="text-role-resident"
-        showUnread
         contentPaddingBottom={insets.bottom + 32}
+        onVote={handleVote}
+        voting={castVote.isPending}
       />
     </View>
   );

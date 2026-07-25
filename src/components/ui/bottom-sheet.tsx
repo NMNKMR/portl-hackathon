@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/text';
+import { cn } from '@/lib/cn';
 import { useThemeColors } from '@/lib/theme-colors';
 
 const DEFAULT_SNAP_POINTS: (string | number)[] = ['40%', '70%'];
@@ -107,3 +108,14 @@ export function AppBottomSheet({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
 });
+
+/** Vertical spacing between stacked labels/inputs inside bottom-sheet forms. */
+export function BottomSheetFormFields({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}): React.JSX.Element {
+  return <View className={cn('gap-5', className)}>{children}</View>;
+}

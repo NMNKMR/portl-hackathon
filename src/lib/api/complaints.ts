@@ -106,6 +106,31 @@ export async function createComplaint(input: {
   return mapComplaint(data as Record<string, unknown>);
 }
 
+export async function updateComplaint(input: {
+  id: string;
+  category?: string;
+  description?: string;
+  photoUrl?: string | null;
+}) {
+  const patch: Record<string, unknown> = {};
+
+  if (input.category !== undefined) patch.category = input.category.trim();
+  if (input.description !== undefined) {
+    patch.description = input.description.trim();
+  }
+  if (input.photoUrl !== undefined) patch.photo_url = input.photoUrl;
+
+  const { data, error } = await supabase
+    .from('complaints')
+    .update(patch)
+    .eq('id', input.id)
+    .select(COMPLAINT_SELECT)
+    .single();
+
+  if (error) throw error;
+  return mapComplaint(data as Record<string, unknown>);
+}
+
 export async function updateComplaintStatus(input: {
   id: string;
   status: ComplaintStatus;

@@ -129,24 +129,79 @@ export async function createNotice(input: {
 export async function markNoticeRead(input: {
   noticeId: string;
   membershipId: string;
-}) {
+}): Promise<{ read_at: string }> {
+  const { data, error } = await supabase.rpc('mark_notice_read', {
+    p_notice_id: input.noticeId,
+    p_membership_id: input.membershipId,
+  });
+
+  if (!error && data) {
+    return { read_at: data as string };
+  }
+
+  const readAt = new Date().toISOString();
   const { data: existing, error: readError } = await supabase
     .from('notice_reads')
-    .select('id')
+    .select('read_at')
     .eq('notice_id', input.noticeId)
     .eq('membership_id', input.membershipId)
     .maybeSingle();
 
-  if (readError) throw readError;
-  if (existing) return;
+  if (readError && error) throw error;
+  if (existing?.read_at) {
+    return { read_at: existing.read_at };
+  }
 
-  const { error } = await supabase.from('notice_reads').insert({
+  const { error: insertError } = await supabase.from('notice_reads').insert({
     notice_id: input.noticeId,
     membership_id: input.membershipId,
-    read_at: new Date().toISOString(),
+    read_at: readAt,
   });
 
+  if (insertError) {
+    if (insertError.code === '23505') {
+      const { data: reread, error: rereadError } = await supabase
+        .from('notice_reads')
+        .select('read_at')
+        .eq('notice_id', input.noticeId)
+        .eq('membership_id', input.membershipId)
+        .maybeSingle();
+      if (rereadError) throw rereadError;
+      if (reread?.read_at) return { read_at: reread.read_at };
+    }
+    throw error ?? insertError;
+  }
+
+  return { read_at: readAt };
+}
+
+export async function updateNotice(input: {
+  id: string;
+  title?: string;
+  body?: string | null;
+  photoUrl?: string | null;
+  pinned?: boolean;
+  validTill?: string | null;
+  isActive?: boolean;
+}) {
+  const patch: Record<string, unknown> = {};
+
+  if (input.title !== undefined) patch.title = input.title.trim();
+  if (input.body !== undefined) patch.body = input.body?.trim() || null;
+  if (input.photoUrl !== undefined) patch.photo_url = input.photoUrl;
+  if (input.pinned !== undefined) patch.pinned = input.pinned;
+  if (input.validTill !== undefined) patch.valid_till = input.validTill;
+  if (input.isActive !== undefined) patch.is_active = input.isActive;
+
+  const { data, error } = await supabase
+    .from('notices')
+    .update(patch)
+    .eq('id', input.id)
+    .select(NOTICE_SELECT)
+    .single();
+
   if (error) throw error;
+  return mapNotice(data as Record<string, unknown>);
 }
 
 export function countUnreadNotices(notices: Notice[]): number {

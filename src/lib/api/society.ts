@@ -112,6 +112,26 @@ export async function fetchMyMemberships() {
   return (data ?? []) as MembershipWithSociety[];
 }
 
+export function resolveApprovedMembership(
+  memberships: MembershipWithSociety[],
+  input: { societyId?: string; role?: MembershipRole },
+): MembershipWithSociety | undefined {
+  if (input.societyId) {
+    return memberships.find(
+      (m) =>
+        m.society_id === input.societyId &&
+        m.status === 'approved' &&
+        (!input.role || m.role === input.role),
+    );
+  }
+  if (input.role) {
+    return memberships.find(
+      (m) => m.role === input.role && m.status === 'approved',
+    );
+  }
+  return memberships.find((m) => m.status === 'approved');
+}
+
 export async function requestMembership(input: {
   societyId: string;
   role: 'resident' | 'guard';

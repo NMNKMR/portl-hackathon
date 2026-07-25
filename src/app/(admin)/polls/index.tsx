@@ -7,16 +7,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NoticeCard } from '@/components/notices/notice-card';
-import { NoticeFormSheet } from '@/components/notices/notice-form-sheet';
+import { PollCard } from '@/components/polls/poll-card';
+import { PollFormSheet } from '@/components/polls/poll-form-sheet';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { useSocietyNotices } from '@/hooks/use-notices';
+import { useSocietyPolls } from '@/hooks/use-polls';
 import { useMyMemberships } from '@/hooks/use-society';
-import type { Notice } from '@/lib/api/notices';
+import type { PollWithResults } from '@/lib/api/polls';
 import { useThemeColors } from '@/lib/theme-colors';
 
-export default function AdminNoticesScreen() {
+export default function AdminPollsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
@@ -37,14 +37,17 @@ export default function AdminNoticesScreen() {
   }, [memberships.data, params.societyId]);
 
   const societyId = membership?.society_id;
-  const notices = useSocietyNotices(societyId);
+  const polls = useSocietyPolls({
+    societyId,
+    membershipId: membership?.id,
+  });
 
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const openDetail = (notice: Notice) => {
+  const openDetail = (poll: PollWithResults) => {
     const href = societyId
-      ? (`/(admin)/notices/${notice.id}?societyId=${encodeURIComponent(societyId)}` as Href)
-      : (`/(admin)/notices/${notice.id}` as Href);
+      ? (`/(admin)/polls/${poll.id}?societyId=${encodeURIComponent(societyId)}` as Href)
+      : (`/(admin)/polls/${poll.id}` as Href);
     router.push(href);
   };
 
@@ -60,7 +63,7 @@ export default function AdminNoticesScreen() {
     return (
       <View className="flex-1 bg-background px-6 justify-center">
         <Text variant="title" className="text-role-admin">
-          Notices
+          Polls
         </Text>
         <Text variant="body" tone="muted" className="mt-2">
           No approved admin membership.
@@ -78,10 +81,10 @@ export default function AdminNoticesScreen() {
         <View className="mb-4 flex-row items-start justify-between gap-3">
           <View className="flex-1">
             <Text variant="title" className="text-role-admin">
-              Notices
+              Polls
             </Text>
             <Text variant="body" tone="muted" className="mt-1">
-              Post society announcements
+              Create and manage society polls
             </Text>
           </View>
           <Button
@@ -92,30 +95,30 @@ export default function AdminNoticesScreen() {
           />
         </View>
 
-        {notices.isLoading ? (
+        {polls.isLoading ? (
           <ActivityIndicator color={colors.roleAdmin} />
         ) : (
           <FlatList
-            data={notices.data ?? []}
+            data={polls.data ?? []}
             keyExtractor={(item) => item.id}
-            refreshing={notices.isRefetching}
-            onRefresh={() => void notices.refetch()}
+            refreshing={polls.isRefetching}
+            onRefresh={() => void polls.refetch()}
             contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
             ListEmptyComponent={
               <View className="items-center py-16">
                 <Text variant="body" tone="muted">
-                  No notices yet.
+                  No polls yet.
                 </Text>
               </View>
             }
             renderItem={({ item }) => (
-              <NoticeCard notice={item} onPress={() => openDetail(item)} />
+              <PollCard poll={item} onPress={() => openDetail(item)} />
             )}
           />
         )}
       </View>
 
-      <NoticeFormSheet
+      <PollFormSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         societyId={societyId}

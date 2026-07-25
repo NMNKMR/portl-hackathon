@@ -15,7 +15,8 @@ export type AttentionIcon =
   | 'construct'
   | 'qr'
   | 'shield'
-  | 'person';
+  | 'person'
+  | 'chart';
 
 export type AttentionItem = {
   id: string;
@@ -42,7 +43,8 @@ const ICONS: Record<
       | 'construct-outline'
       | 'qr-code-outline'
       | 'shield-checkmark-outline'
-      | 'person-add-outline';
+      | 'person-add-outline'
+      | 'bar-chart-outline';
   }
 > = {
   time: { family: 'ionic', name: 'time-outline' },
@@ -52,6 +54,7 @@ const ICONS: Record<
   qr: { family: 'ionic', name: 'qr-code-outline' },
   shield: { family: 'ionic', name: 'shield-checkmark-outline' },
   person: { family: 'ionic', name: 'person-add-outline' },
+  chart: { family: 'ionic', name: 'bar-chart-outline' },
 };
 
 type NeedsAttentionFeedProps = {

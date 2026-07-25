@@ -12,7 +12,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ComplaintCard } from '@/components/complaints/complaint-card';
-import { AppBottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  AppBottomSheet,
+  BottomSheetFormFields,
+} from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { SelectField } from '@/components/ui/select-field';
@@ -223,41 +226,42 @@ export default function ResidentComplaintsScreen() {
         }
       >
         <KeyboardAvoidingView behavior="padding">
-          <SelectField
-            label="Category"
-            value={category}
-            onChange={setCategory}
-            options={CATEGORIES}
-          />
-          <TextInput
-            className="mt-3"
-            label="Description"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="What needs attention?"
-            multiline
-          />
-          <Pressable
-            onPress={() => void pickPhoto()}
-            className="mt-3 h-28 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-card"
-          >
-            {photoUri ? (
-              <Image
-                source={{ uri: photoUri }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-            ) : (
-              <Text variant="caption" tone="muted">
-                Add photo (optional)
+          <BottomSheetFormFields>
+            <SelectField
+              label="Category"
+              value={category}
+              onChange={setCategory}
+              options={CATEGORIES}
+            />
+            <TextInput
+              label="Description"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="What needs attention?"
+              multiline
+            />
+            <Pressable
+              onPress={() => void pickPhoto()}
+              className="h-28 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-card"
+            >
+              {photoUri ? (
+                <Image
+                  source={{ uri: photoUri }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Text variant="caption" tone="muted">
+                  Add photo (optional)
+                </Text>
+              )}
+            </Pressable>
+            {error ? (
+              <Text variant="caption" tone="danger">
+                {error}
               </Text>
-            )}
-          </Pressable>
-          {error ? (
-            <Text variant="caption" tone="danger" className="mt-3">
-              {error}
-            </Text>
-          ) : null}
+            ) : null}
+          </BottomSheetFormFields>
         </KeyboardAvoidingView>
       </AppBottomSheet>
     </View>

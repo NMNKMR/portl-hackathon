@@ -9,7 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StaffMemberCard } from '@/components/staff/staff-member-card';
-import { AppBottomSheet } from '@/components/ui/bottom-sheet';
+import { AppBottomSheet, BottomSheetFormFields } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { SelectField } from '@/components/ui/select-field';
@@ -305,53 +305,54 @@ export function StaffDirectoryScreen({
         }
       >
         <KeyboardAvoidingView behavior="padding">
-          <View className="rounded-2xl border border-border bg-neutral-50 px-4 py-4 dark:bg-neutral-900">
-            <TextInput
-              label="Full name"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              placeholder="e.g. Ramesh"
-            />
-            <TextInput
-              className="mt-4"
-              label="Phone (optional)"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="Contact number"
-            />
-            {categories.isError ? (
-              <Text variant="caption" tone="danger" className="mt-3">
-                {categories.error instanceof Error
-                  ? categories.error.message
-                  : 'Could not load categories'}
-              </Text>
-            ) : categoryOptions.length > 0 ? (
-              <View className="mt-4">
-                <SelectField
-                  label="Category"
-                  value={categoryId}
-                  onChange={setCategoryId}
-                  options={categoryOptions}
+          <BottomSheetFormFields>
+            <View className="rounded-2xl border border-border bg-neutral-50 px-4 py-4 dark:bg-neutral-900">
+              <BottomSheetFormFields>
+                <TextInput
+                  label="Full name"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  placeholder="e.g. Ramesh"
                 />
-              </View>
-            ) : role === 'admin' ? (
-              <Text variant="caption" tone="muted" className="mt-3">
-                Default categories appear after the first save.
+                <TextInput
+                  label="Phone (optional)"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholder="Contact number"
+                />
+                {categories.isError ? (
+                  <Text variant="caption" tone="danger">
+                    {categories.error instanceof Error
+                      ? categories.error.message
+                      : 'Could not load categories'}
+                  </Text>
+                ) : categoryOptions.length > 0 ? (
+                  <SelectField
+                    label="Category"
+                    value={categoryId}
+                    onChange={setCategoryId}
+                    options={categoryOptions}
+                  />
+                ) : role === 'admin' ? (
+                  <Text variant="caption" tone="muted">
+                    Default categories appear after the first save.
+                  </Text>
+                ) : (
+                  <Text variant="caption" tone="muted">
+                    No categories yet. Ask an admin to open Staff once, or save
+                    without a category.
+                  </Text>
+                )}
+              </BottomSheetFormFields>
+            </View>
+            {formError ? (
+              <Text variant="caption" tone="danger">
+                {formError}
               </Text>
-            ) : (
-              <Text variant="caption" tone="muted" className="mt-3">
-                No categories yet. Ask an admin to open Staff once, or save
-                without a category.
-              </Text>
-            )}
-          </View>
-          {formError ? (
-            <Text variant="caption" tone="danger" className="mt-3">
-              {formError}
-            </Text>
-          ) : null}
+            ) : null}
+          </BottomSheetFormFields>
         </KeyboardAvoidingView>
       </AppBottomSheet>
     </View>

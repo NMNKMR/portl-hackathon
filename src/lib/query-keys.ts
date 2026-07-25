@@ -79,4 +79,23 @@ export const queryKeys = {
       ] as const,
     detail: (id: string) => [...queryKeys.notices.all, id] as const,
   },
+  polls: {
+    all: ['polls'] as const,
+    bySociety: (societyId: string, membershipId?: string) =>
+      [
+        ...queryKeys.polls.all,
+        'society',
+        societyId,
+        membershipId ?? '',
+      ] as const,
+    openForMember: (societyId: string, membershipId: string) =>
+      [
+        ...queryKeys.polls.all,
+        'open',
+        societyId,
+        membershipId,
+      ] as const,
+    detail: (id: string, membershipId?: string) =>
+      [...queryKeys.polls.all, id, membershipId ?? ''] as const,
+  },
 } as const;

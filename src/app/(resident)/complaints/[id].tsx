@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -8,7 +8,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ComplaintFormSheet } from '@/components/complaints/complaint-form-sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { ScreenBackButton } from '@/components/ui/screen-back-button';
 import { Text } from '@/components/ui/text';
@@ -70,6 +72,11 @@ export default function ResidentComplaintDetailScreen() {
 
   const complaintQuery = useComplaint(complaintId);
   const complaint = complaintQuery.data;
+  const [editOpen, setEditOpen] = useState(false);
+  const canEdit =
+    Boolean(complaint && membership) &&
+    complaint?.raised_by_membership_id === membership?.id &&
+    complaint?.status === 'open';
 
   if (memberships.isLoading || complaintQuery.isLoading) {
     return (
@@ -148,7 +155,17 @@ export default function ResidentComplaintDetailScreen() {
       style={{ paddingTop: insets.top + 8 }}
     >
       <View className="px-5">
-        <ScreenBackButton className="mb-2" />
+        <View className="mb-2 flex-row items-center justify-between gap-3">
+          <ScreenBackButton />
+          {canEdit && complaint && membership?.society_id ? (
+            <Button
+              label="Edit"
+              size="sm"
+              variant="outline"
+              onPress={() => setEditOpen(true)}
+            />
+          ) : null}
+        </View>
       </View>
 
       <ScrollView
@@ -216,6 +233,15 @@ export default function ResidentComplaintDetailScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      {canEdit && complaint && membership?.society_id ? (
+        <ComplaintFormSheet
+          visible={editOpen}
+          onClose={() => setEditOpen(false)}
+          complaint={complaint}
+          societyId={membership.society_id}
+        />
+      ) : null}
     </View>
   );
 }

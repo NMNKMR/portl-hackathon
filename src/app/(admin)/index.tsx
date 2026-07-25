@@ -16,6 +16,7 @@ import { Text } from '@/components/ui/text';
 import { useAuth } from '@/hooks/use-auth';
 import { useSocietyComplaints } from '@/hooks/use-complaints';
 import { useSocietyNotices } from '@/hooks/use-notices';
+import { useSocietyPolls } from '@/hooks/use-polls';
 import {
   useMyMemberships,
   usePendingMemberships,
@@ -23,6 +24,7 @@ import {
   useSocietyFlats,
 } from '@/hooks/use-society';
 import { countOpenComplaints } from '@/lib/api/complaints';
+import { countOpenPolls } from '@/lib/api/polls';
 import { displayPersonName } from '@/lib/format';
 import { pendingFlatLabel } from '@/lib/api/society';
 import { useThemeColors } from '@/lib/theme-colors';
@@ -45,16 +47,34 @@ export default function AdminHomeScreen() {
     return admin?.society_id;
   }, [params.societyId, memberships.data]);
 
+  const adminMembership = useMemo(() => {
+    const rows = memberships.data ?? [];
+    if (params.societyId) {
+      return rows.find(
+        (m) =>
+          m.society_id === params.societyId &&
+          m.role === 'admin' &&
+          m.status === 'approved',
+      );
+    }
+    return rows.find((m) => m.role === 'admin' && m.status === 'approved');
+  }, [params.societyId, memberships.data]);
+
   const society = useSociety(societyId);
   const pending = usePendingMemberships(societyId);
   const complaints = useSocietyComplaints(societyId);
   const notices = useSocietyNotices(societyId);
   const flats = useSocietyFlats(societyId);
+  const polls = useSocietyPolls({
+    societyId,
+    membershipId: adminMembership?.id,
+  });
   const code = params.code ?? society.data?.code;
   const pendingRows = pending.data ?? [];
   const openComplaints = countOpenComplaints(complaints.data ?? []);
   const activeNoticeCount = (notices.data ?? []).filter((n) => n.is_active)
     .length;
+  const openPollCount = countOpenPolls(polls.data ?? []);
   const flatCount = flats.data?.length ?? 0;
   const societyName = society.data?.name ?? 'Your society';
 
@@ -107,8 +127,29 @@ export default function AdminHomeScreen() {
       });
     }
 
+    for (const poll of polls.data ?? []) {
+      if (!poll.is_open) continue;
+      items.push({
+        id: `poll-${poll.id}`,
+        title: `Open poll · ${poll.question}`,
+        subtitle:
+          poll.total_votes === 0
+            ? 'No votes yet'
+            : `${poll.total_votes} vote${poll.total_votes === 1 ? '' : 's'}`,
+        timestampIso: poll.created_at,
+        badgeLabel: 'Open',
+        badgeTone: 'pending',
+        icon: 'chart',
+        sortAt: new Date(poll.created_at).getTime() + 2_000,
+        onPress: () =>
+          router.push(
+            `/(admin)/polls/${poll.id}?societyId=${encodeURIComponent(societyId)}` as Href,
+          ),
+      });
+    }
+
     return items;
-  }, [societyId, pendingRows, complaints.data, router]);
+  }, [societyId, pendingRows, complaints.data, polls.data, router]);
 
   const quickActions: DashboardQuickAction[] = [
     {
@@ -206,14 +247,15 @@ export default function AdminHomeScreen() {
     {
       id: 'polls',
       label: 'Active polls',
-      value: '0',
-      linkLabel: 'Open polls',
+      value: String(openPollCount),
+      linkLabel: openPollCount > 0 ? 'Open polls' : 'Create',
       icon: 'chart',
       onPress: () =>
-        router.push({
-          pathname: '/(admin)/polls',
-          params: societyId ? { societyId } : undefined,
-        } as Href),
+        router.push(
+          societyId
+            ? (`/(admin)/polls?societyId=${encodeURIComponent(societyId)}` as Href)
+            : ('/(admin)/polls' as Href),
+        ),
     },
     {
       id: 'blocks',

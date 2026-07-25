@@ -354,6 +354,177 @@ export type Database = {
           },
         ];
       };
+      notices: {
+        Row: {
+          id: string;
+          society_id: string;
+          title: string;
+          body: string | null;
+          photo_url: string | null;
+          posted_by_membership_id: string | null;
+          pinned: boolean;
+          valid_from: string;
+          valid_till: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          society_id: string;
+          title: string;
+          body?: string | null;
+          photo_url?: string | null;
+          posted_by_membership_id?: string | null;
+          pinned?: boolean;
+          valid_from?: string;
+          valid_till?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          society_id?: string;
+          title?: string;
+          body?: string | null;
+          photo_url?: string | null;
+          posted_by_membership_id?: string | null;
+          pinned?: boolean;
+          valid_from?: string;
+          valid_till?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      notice_reads: {
+        Row: {
+          id: string;
+          notice_id: string;
+          membership_id: string;
+          read_at: string;
+        };
+        Insert: {
+          id?: string;
+          notice_id: string;
+          membership_id: string;
+          read_at?: string;
+        };
+        Update: {
+          id?: string;
+          notice_id?: string;
+          membership_id?: string;
+          read_at?: string;
+        };
+        Relationships: [];
+      };
+      complaints: {
+        Row: {
+          id: string;
+          society_id: string;
+          flat_id: string;
+          raised_by_membership_id: string | null;
+          category: string | null;
+          description: string | null;
+          photo_url: string | null;
+          status: ComplaintStatus;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          society_id: string;
+          flat_id: string;
+          raised_by_membership_id?: string | null;
+          category?: string | null;
+          description?: string | null;
+          photo_url?: string | null;
+          status?: ComplaintStatus;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          society_id?: string;
+          flat_id?: string;
+          raised_by_membership_id?: string | null;
+          category?: string | null;
+          description?: string | null;
+          photo_url?: string | null;
+          status?: ComplaintStatus;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Relationships: [];
+      };
+      polls: {
+        Row: {
+          id: string;
+          society_id: string;
+          question: string;
+          created_by_membership_id: string | null;
+          closes_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          society_id: string;
+          question: string;
+          created_by_membership_id?: string | null;
+          closes_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          society_id?: string;
+          question?: string;
+          created_by_membership_id?: string | null;
+          closes_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      poll_options: {
+        Row: {
+          id: string;
+          poll_id: string;
+          option_text: string;
+        };
+        Insert: {
+          id?: string;
+          poll_id: string;
+          option_text: string;
+        };
+        Update: {
+          id?: string;
+          poll_id?: string;
+          option_text?: string;
+        };
+        Relationships: [];
+      };
+      poll_votes: {
+        Row: {
+          id: string;
+          poll_id: string;
+          option_id: string;
+          membership_id: string;
+          voted_at: string;
+        };
+        Insert: {
+          id?: string;
+          poll_id: string;
+          option_id: string;
+          membership_id: string;
+          voted_at?: string;
+        };
+        Update: {
+          id?: string;
+          poll_id?: string;
+          option_id?: string;
+          membership_id?: string;
+          voted_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -414,6 +585,18 @@ export type Database = {
           flat_number: string | null;
           block_name: string | null;
         }[];
+      };
+      cast_poll_vote: {
+        Args: {
+          p_poll_id: string;
+          p_option_id: string;
+          p_membership_id: string;
+        };
+        Returns: string;
+      };
+      mark_notice_read: {
+        Args: { p_notice_id: string; p_membership_id: string };
+        Returns: string;
       };
     };
     Enums: {

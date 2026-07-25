@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, View } from 'react-native';
 
-import { AppBottomSheet } from '@/components/ui/bottom-sheet';
+import { AppBottomSheet, BottomSheetFormFields } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
@@ -77,11 +77,11 @@ export function CreateBlockSheet({
       }
     >
       <KeyboardAvoidingView behavior="padding">
-        <Text variant="caption" tone="muted">
-          Name your tower, wing, or block to organize flats.
-        </Text>
+        <BottomSheetFormFields>
+          <Text variant="caption" tone="muted">
+            Name your tower, wing, or block to organize flats.
+          </Text>
 
-        <View className="mt-5">
           <TextInput
             label="Block name"
             placeholder="e.g. Tower A"
@@ -89,35 +89,37 @@ export function CreateBlockSheet({
             onChangeText={setName}
             autoCapitalize="words"
           />
-        </View>
 
-        <Text variant="label" className="mt-4 mb-2">
-          Type
-        </Text>
-        <View className="flex-row flex-wrap gap-2">
-          {BLOCK_TYPES.map((item) => {
-            const selected = type === item.value;
-            return (
-              <Pressable
-                key={item.value}
-                onPress={() => setType(item.value)}
-                className={`rounded-xl border px-3 py-2 ${
-                  selected
-                    ? 'border-role-admin bg-role-admin/10'
-                    : 'border-border bg-background'
-                }`}
-              >
-                <Text variant="caption">{item.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+          <View>
+            <Text variant="label" className="mb-2">
+              Type
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {BLOCK_TYPES.map((item) => {
+                const selected = type === item.value;
+                return (
+                  <Pressable
+                    key={item.value}
+                    onPress={() => setType(item.value)}
+                    className={`rounded-xl border px-3 py-2 ${
+                      selected
+                        ? 'border-role-admin bg-role-admin/10'
+                        : 'border-border bg-background'
+                    }`}
+                  >
+                    <Text variant="caption">{item.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
-        {error ? (
-          <Text variant="caption" tone="danger" className="mt-3">
-            {error}
-          </Text>
-        ) : null}
+          {error ? (
+            <Text variant="caption" tone="danger">
+              {error}
+            </Text>
+          ) : null}
+        </BottomSheetFormFields>
       </KeyboardAvoidingView>
     </AppBottomSheet>
   );
