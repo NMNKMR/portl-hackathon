@@ -14,14 +14,15 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
-  useCheckInVisitor,
+  useAdmitVisitorEntry,
   useCheckOutVisitor,
   useVisitorRealtime,
   useVisitorRequest,
 } from '@/hooks/use-visitors';
-import { visitorFlatLabel } from '@/lib/api/visitors';
+import { hasQrPass, visitorFlatLabel } from '@/lib/api/visitors';
 import { formatJoinDate } from '@/lib/format';
 import { useThemeColors } from '@/lib/theme-colors';
+import { remainingScans } from '@/lib/visitor-qr';
 import type { VisitorStatus } from '@/types/database';
 
 function statusBadge(status: VisitorStatus): {
@@ -69,7 +70,7 @@ export default function GuardVisitorDetailScreen() {
   const id = typeof params.id === 'string' ? params.id : undefined;
 
   const visitorQuery = useVisitorRequest(id);
-  const checkIn = useCheckInVisitor();
+  const admit = useAdmitVisitorEntry();
   const checkOut = useCheckOutVisitor();
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -84,14 +85,18 @@ export default function GuardVisitorDetailScreen() {
     [visitor],
   );
 
-  const handleCheckIn = async () => {
-    if (!id) return;
+  const handleAdmit = async () => {
+    if (!id || !visitor) return;
     setActionError(null);
     try {
-      await checkIn.mutateAsync(id);
+      if (hasQrPass(visitor)) {
+        setActionError('QR available — open Scan QR to grant entry');
+        return;
+      }
+      await admit.mutateAsync({ id, requireNoQr: true });
     } catch (err) {
       setActionError(
-        err instanceof Error ? err.message : 'Could not check in visitor',
+        err instanceof Error ? err.message : 'Could not admit visitor',
       );
     }
   };
@@ -235,6 +240,15 @@ export default function GuardVisitorDetailScreen() {
             value={formatJoinDate(visitor.checked_out_at) || '—'}
           />
         ) : null}
+        {visitor.initiated_by === 'resident' ? (
+          <DetailRow
+            label="Entries"
+            value={`${visitor.scan_count}/${visitor.max_scans} used · ${remainingScans(visitor)} left`}
+          />
+        ) : null}
+        {hasQrPass(visitor) ? (
+          <DetailRow label="Entry method" value="QR available — scan only" />
+        ) : null}
 
         {actionError ? (
           <Text variant="caption" tone="danger" className="mb-3">
@@ -242,13 +256,30 @@ export default function GuardVisitorDetailScreen() {
           </Text>
         ) : null}
 
-        {visitor.status === 'approved' ? (
+        {visitor.status === 'approved' && hasQrPass(visitor) ? (
           <Button
-            label="Check in"
+            label="Open Scan QR"
+            fullWidth
+            variant="accent"
+            onPress={() =>
+              router.push(
+                `/(guard)/visitors/scan?societyId=${encodeURIComponent(visitor.society_id)}` as Href,
+              )
+            }
+          />
+        ) : null}
+
+        {visitor.status === 'approved' && !hasQrPass(visitor) ? (
+          <Button
+            label={
+              visitor.max_scans > 1
+                ? `Admit entry (${remainingScans(visitor)} left)`
+                : 'Check in'
+            }
             fullWidth
             variant="primary"
-            loading={checkIn.isPending}
-            onPress={() => void handleCheckIn()}
+            loading={admit.isPending}
+            onPress={() => void handleAdmit()}
           />
         ) : null}
 

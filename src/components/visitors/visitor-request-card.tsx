@@ -4,11 +4,13 @@ import { Pressable, View } from 'react-native';
 import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
 import {
+  hasQrPass,
   visitorFlatLabel,
   type VisitorRequest,
 } from '@/lib/api/visitors';
 import { formatJoinDate } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { remainingScans } from '@/lib/visitor-qr';
 import type { VisitorStatus } from '@/types/database';
 
 type BadgeTone = 'pending' | 'success' | 'danger' | 'muted';
@@ -57,12 +59,25 @@ export function VisitorRequestCard({
                 {formatVisitorType(visitor.visitor_type)} · {flatLabel}
               </Text>
             </View>
-            <Badge tone={status.tone} label={status.label} />
+            <View className="items-end gap-1">
+              <Badge tone={status.tone} label={status.label} />
+              {hasQrPass(visitor) ? (
+                <Badge tone="pending" label="QR available" />
+              ) : null}
+            </View>
           </View>
+
+          {visitor.initiated_by === 'resident' && visitor.max_scans > 1 ? (
+            <Text variant="caption" tone="muted" className="mt-2">
+              Entries {visitor.scan_count}/{visitor.max_scans}
+              {remainingScans(visitor) === 0 ? ' · exhausted' : ''}
+            </Text>
+          ) : null}
 
           {requestedAt ? (
             <Text variant="caption" tone="muted" className="mt-2">
-              Requested {requestedAt}
+              {visitor.initiated_by === 'resident' ? 'Pre-approved' : 'Requested'}{' '}
+              {requestedAt}
             </Text>
           ) : null}
         </View>

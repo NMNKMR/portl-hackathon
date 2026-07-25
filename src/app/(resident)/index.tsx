@@ -93,7 +93,12 @@ export default function ResidentHomeScreen() {
       id: 'preapprove',
       label: 'Pre-approve',
       icon: 'qr',
-      onPress: () => comingSoon('Guest pre-approval'),
+      onPress: () => {
+        if (!membership?.society_id) return;
+        router.push(
+          `/(resident)/visitors/pre-approve?societyId=${encodeURIComponent(membership.society_id)}` as Href,
+        );
+      },
     },
     ...(isPrimary
       ? [

@@ -26,6 +26,7 @@ export type VisitorStatus =
   | 'checked_in'
   | 'checked_out';
 export type VehicleType = 'car' | 'bike' | 'other' | 'none';
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
 
 export type Database = {
   public: {
@@ -226,6 +227,8 @@ export type Database = {
           status: VisitorStatus;
           qr_token: string | null;
           qr_expires_at: string | null;
+          max_scans: number;
+          scan_count: number;
           requested_at: string;
           approved_by_membership_id: string | null;
           approved_at: string | null;
@@ -247,6 +250,8 @@ export type Database = {
           status?: VisitorStatus;
           qr_token?: string | null;
           qr_expires_at?: string | null;
+          max_scans?: number;
+          scan_count?: number;
           requested_at?: string;
           approved_by_membership_id?: string | null;
           approved_at?: string | null;
@@ -268,6 +273,8 @@ export type Database = {
           status?: VisitorStatus;
           qr_token?: string | null;
           qr_expires_at?: string | null;
+          max_scans?: number;
+          scan_count?: number;
           requested_at?: string;
           approved_by_membership_id?: string | null;
           approved_at?: string | null;

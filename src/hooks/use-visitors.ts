@@ -2,13 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import {
+  admitVisitorEntry,
+  attachQrToPreApproval,
   checkInVisitor,
   checkOutVisitor,
+  createGuestPreApproval,
   createVisitorRequest,
+  fetchVisitorByQrToken,
   fetchVisitorRequest,
   fetchVisitorRequestsByFlat,
   fetchVisitorRequestsBySociety,
   respondToVisitorRequest,
+  type CreatePreApprovalInput,
   type CreateVisitorInput,
 } from '@/lib/api/visitors';
 import { queryKeys } from '@/lib/query-keys';
@@ -99,6 +104,64 @@ export function useCheckInVisitor() {
         id: data.id,
       });
     },
+  });
+}
+
+export function useAdmitVisitorEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      requireQr?: boolean;
+      requireNoQr?: boolean;
+    }) =>
+      admitVisitorEntry(input.id, {
+        requireQr: input.requireQr,
+        requireNoQr: input.requireNoQr,
+      }),
+    onSuccess: (data) => {
+      invalidateVisitorCaches(qc, {
+        societyId: data.society_id,
+        flatId: data.flat_id,
+        id: data.id,
+      });
+    },
+  });
+}
+
+export function useCreateGuestPreApproval() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreatePreApprovalInput) => createGuestPreApproval(input),
+    onSuccess: (data) => {
+      invalidateVisitorCaches(qc, {
+        societyId: data.society_id,
+        flatId: data.flat_id,
+        id: data.id,
+      });
+    },
+  });
+}
+
+export function useAttachQrToPreApproval() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: attachQrToPreApproval,
+    onSuccess: (data) => {
+      invalidateVisitorCaches(qc, {
+        societyId: data.society_id,
+        flatId: data.flat_id,
+        id: data.id,
+      });
+    },
+  });
+}
+
+export function useVisitorByQrToken(token: string | undefined) {
+  return useQuery({
+    queryKey: [...queryKeys.visitorRequests.all, 'qr', token ?? ''] as const,
+    queryFn: () => fetchVisitorByQrToken(token!),
+    enabled: Boolean(token),
   });
 }
 

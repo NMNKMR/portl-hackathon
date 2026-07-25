@@ -21,17 +21,25 @@ import {
 import { type VisitorRequest } from '@/lib/api/visitors';
 import { useThemeColors } from '@/lib/theme-colors';
 
-type FilterId = 'all' | 'pending' | 'approved' | 'inside';
+type FilterId = 'all' | 'pending' | 'approved' | 'preapproved' | 'inside';
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'pending', label: 'Pending' },
   { id: 'approved', label: 'Approved' },
+  { id: 'preapproved', label: 'Pre-approved' },
   { id: 'inside', label: 'Inside' },
 ];
 
 function normalizeFilter(raw: string | undefined): FilterId {
-  if (raw === 'pending' || raw === 'approved' || raw === 'inside') return raw;
+  if (
+    raw === 'pending' ||
+    raw === 'approved' ||
+    raw === 'inside' ||
+    raw === 'preapproved'
+  ) {
+    return raw;
+  }
   if (raw === 'checked_in') return 'inside';
   return 'all';
 }
@@ -39,6 +47,13 @@ function normalizeFilter(raw: string | undefined): FilterId {
 function matchesFilter(visitor: VisitorRequest, filter: FilterId): boolean {
   if (filter === 'all') return true;
   if (filter === 'inside') return visitor.status === 'checked_in';
+  if (filter === 'preapproved') {
+    return (
+      visitor.initiated_by === 'resident' &&
+      (visitor.status === 'approved' ||
+        (visitor.max_scans > 1 && visitor.scan_count > 0))
+    );
+  }
   return visitor.status === filter;
 }
 
@@ -128,13 +143,28 @@ export default function GuardVisitorsListScreen() {
               {societyName}
             </Text>
           </View>
-          <Button
-            label="Register"
-            size="sm"
-            variant="accent"
-            icon={{ family: 'ionic', name: 'add-circle-outline' }}
-            onPress={() => router.push(registerHref)}
-          />
+          <View className="flex-row gap-2">
+            <Button
+              label="Scan"
+              size="sm"
+              variant="outline"
+              icon={{ family: 'ionic', name: 'qr-code-outline' }}
+              onPress={() =>
+                router.push(
+                  societyId
+                    ? (`/(guard)/visitors/scan?societyId=${encodeURIComponent(societyId)}` as Href)
+                    : ('/(guard)/visitors/scan' as Href),
+                )
+              }
+            />
+            <Button
+              label="Register"
+              size="sm"
+              variant="accent"
+              icon={{ family: 'ionic', name: 'add-circle-outline' }}
+              onPress={() => router.push(registerHref)}
+            />
+          </View>
         </View>
 
         <View className="mb-4 flex-row flex-wrap gap-2">

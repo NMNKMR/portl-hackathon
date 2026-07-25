@@ -93,7 +93,12 @@ export default function GuardHomeScreen() {
       id: 'qr',
       label: 'Scan QR',
       icon: 'qr',
-      onPress: () => comingSoon('QR scanner'),
+      onPress: () => {
+        if (!societyId) return;
+        router.push(
+          `/(guard)/visitors/scan?societyId=${encodeURIComponent(societyId)}` as Href,
+        );
+      },
     },
     {
       id: 'log',

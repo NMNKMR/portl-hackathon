@@ -99,6 +99,22 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "Allow Portl to use the camera for visitor photos.",
       },
     ],
+    [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Allow Portl to use the camera to scan guest and staff QR passes.",
+        barcodeScannerEnabled: true,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      "expo-contacts",
+      {
+        contactsPermission:
+          "Allow Portl to import guest details from your contacts.",
+      },
+    ],
     "@react-native-vector-icons/ionicons",
     "@react-native-vector-icons/material-icons",
     "@react-native-vector-icons/material-design-icons",
