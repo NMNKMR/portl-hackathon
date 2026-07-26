@@ -95,8 +95,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         photosPermission:
           "Allow Portl to access your photos for visitor and profile images.",
-        cameraPermission:
-          "Allow Portl to use the camera for visitor photos.",
+        cameraPermission: "Allow Portl to use the camera for visitor photos.",
       },
     ],
     [
@@ -130,5 +129,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     eas: {
       projectId: "985ae7e3-0038-4855-a082-4576bccf68f0",
     },
+  },
+  updates: {
+    url: "https://u.expo.dev/985ae7e3-0038-4855-a082-4576bccf68f0",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
   },
 });
